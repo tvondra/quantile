@@ -1,8 +1,16 @@
+MODULE_big = quantile
+OBJS = src/quantile.o
+
 EXTENSION = quantile
-DATA = quantile--1.0.sql
+DATA = sql/quantile--1.0.sql
+MODULES = quantile
 
 CFLAGS=`pg_config --includedir-server`
 
 PG_CONFIG = pg_config
 PGXS := $(shell $(PG_CONFIG) --pgxs)
 include $(PGXS)
+
+quantile.so: src/quantile.o
+
+src/quantile.o: src/quantile.c
