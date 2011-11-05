@@ -127,8 +127,6 @@ quantile_append_double(PG_FUNCTION_ARGS)
     
     struct_double * data;
     
-    double element;
-    
     MemoryContext oldcontext = MemoryContextSwitchTo(CurrentMemoryContext->parent);
         
     if (PG_ARGISNULL(0)) {
@@ -144,14 +142,19 @@ quantile_append_double(PG_FUNCTION_ARGS)
         data = (struct_double*)PG_GETARG_INT64(0);
     }
     
-    element = PG_GETARG_FLOAT8(1);
+    /* ignore NULL values */
+    if (! PG_ARGISNULL(1)) {
     
-    if (data->next > data->nelements-1) {
-        data->elements = (double*)repalloc(data->elements, sizeof(double)*(data->nelements + SLICE_SIZE));
-        data->nelements = data->nelements + SLICE_SIZE;
+        double element = PG_GETARG_FLOAT8(1);
+        
+        if (data->next > data->nelements-1) {
+            data->elements = (double*)repalloc(data->elements, sizeof(double)*(data->nelements + SLICE_SIZE));
+            data->nelements = data->nelements + SLICE_SIZE;
+        }
+        
+        data->elements[data->next++] = element;
+        
     }
-    
-    data->elements[data->next++] = element;
     
     MemoryContextSwitchTo(oldcontext);
     
@@ -165,8 +168,6 @@ quantile_append_double_array(PG_FUNCTION_ARGS)
     
     struct_double * data;
     
-    double element;
-    
     MemoryContext oldcontext = MemoryContextSwitchTo(CurrentMemoryContext->parent);
         
     if (PG_ARGISNULL(0)) {
@@ -182,14 +183,19 @@ quantile_append_double_array(PG_FUNCTION_ARGS)
         data = (struct_double*)PG_GETARG_INT64(0);
     }
     
-    element = PG_GETARG_FLOAT8(1);
+    /* ignore NULL values */
+    if (! PG_ARGISNULL(1)) {
     
-    if (data->next > data->nelements-1) {
-        data->elements = (double*)repalloc(data->elements, sizeof(double)*(data->nelements + SLICE_SIZE));
-        data->nelements = data->nelements + SLICE_SIZE;
+        double element = PG_GETARG_FLOAT8(1);
+        
+        if (data->next > data->nelements-1) {
+            data->elements = (double*)repalloc(data->elements, sizeof(double)*(data->nelements + SLICE_SIZE));
+            data->nelements = data->nelements + SLICE_SIZE;
+        }
+        
+        data->elements[data->next++] = element;
+        
     }
-    
-    data->elements[data->next++] = element;
     
     MemoryContextSwitchTo(oldcontext);
     
@@ -203,8 +209,6 @@ quantile_append_int32(PG_FUNCTION_ARGS)
     
     struct_int32 * data;
     
-    int32 element;
-    
     MemoryContext oldcontext = MemoryContextSwitchTo(CurrentMemoryContext->parent);
         
     if (PG_ARGISNULL(0)) {
@@ -219,14 +223,19 @@ quantile_append_int32(PG_FUNCTION_ARGS)
         data = (struct_int32*)PG_GETARG_INT64(0);
     }
     
-    element = PG_GETARG_INT32(1);
+    /* ignore NULL values */
+    if (! PG_ARGISNULL(1)) {
     
-    if (data->next > data->nelements-1) {
-        data->elements = (int32*)repalloc(data->elements, sizeof(int32)*(data->nelements + SLICE_SIZE));
-        data->nelements = data->nelements + SLICE_SIZE;
+        int32 element = PG_GETARG_INT32(1);
+        
+        if (data->next > data->nelements-1) {
+            data->elements = (int32*)repalloc(data->elements, sizeof(int32)*(data->nelements + SLICE_SIZE));
+            data->nelements = data->nelements + SLICE_SIZE;
+        }
+        
+        data->elements[data->next++] = element;
+        
     }
-    
-    data->elements[data->next++] = element;
     
     MemoryContextSwitchTo(oldcontext);
     
@@ -240,8 +249,6 @@ quantile_append_int32_array(PG_FUNCTION_ARGS)
     
     struct_int32 * data;
     
-    int32 element;
-    
     MemoryContext oldcontext = MemoryContextSwitchTo(CurrentMemoryContext->parent);
         
     if (PG_ARGISNULL(0)) {
@@ -257,14 +264,19 @@ quantile_append_int32_array(PG_FUNCTION_ARGS)
         data = (struct_int32*)PG_GETARG_INT64(0);
     }
     
-    element = PG_GETARG_INT32(1);
-    
-    if (data->next > data->nelements-1) {
-        data->elements = (int32*)repalloc(data->elements, sizeof(int32)*(data->nelements + SLICE_SIZE));
-        data->nelements = data->nelements + SLICE_SIZE;
+    /* ignore NULL values */
+    if (! PG_ARGISNULL(1)) {
+
+        int32 element = PG_GETARG_INT32(1);
+        
+        if (data->next > data->nelements-1) {
+            data->elements = (int32*)repalloc(data->elements, sizeof(int32)*(data->nelements + SLICE_SIZE));
+            data->nelements = data->nelements + SLICE_SIZE;
+        }
+        
+        data->elements[data->next++] = element;
+        
     }
-    
-    data->elements[data->next++] = element;
     
     MemoryContextSwitchTo(oldcontext);
     
@@ -277,8 +289,6 @@ quantile_append_int64(PG_FUNCTION_ARGS)
 {
     
     struct_int64 * data;
-    
-    int64 element;
     
     MemoryContext oldcontext = MemoryContextSwitchTo(CurrentMemoryContext->parent);
         
@@ -294,14 +304,19 @@ quantile_append_int64(PG_FUNCTION_ARGS)
         data = (struct_int64*)PG_GETARG_INT64(0);
     }
     
-    element = PG_GETARG_INT64(1);
+    /* ignore NULL values */
+    if (! PG_ARGISNULL(1)) {
     
-    if (data->next > data->nelements-1) {
-        data->elements = (int64*)repalloc(data->elements, sizeof(int64)*(data->nelements + SLICE_SIZE));
-        data->nelements = data->nelements + SLICE_SIZE;
+        int64 element = PG_GETARG_INT64(1);
+        
+        if (data->next > data->nelements-1) {
+            data->elements = (int64*)repalloc(data->elements, sizeof(int64)*(data->nelements + SLICE_SIZE));
+            data->nelements = data->nelements + SLICE_SIZE;
+        }
+        
+        data->elements[data->next++] = element;
+        
     }
-    
-    data->elements[data->next++] = element;
     
     MemoryContextSwitchTo(oldcontext);
     
@@ -314,8 +329,6 @@ quantile_append_int64_array(PG_FUNCTION_ARGS)
 {
     
     struct_int64 * data;
-    
-    int64 element;
     
     MemoryContext oldcontext = MemoryContextSwitchTo(CurrentMemoryContext->parent);
         
@@ -332,14 +345,19 @@ quantile_append_int64_array(PG_FUNCTION_ARGS)
         data = (struct_int64*)PG_GETARG_INT64(0);
     }
     
-    element = PG_GETARG_INT64(1);
+    /* ignore NULL values */
+    if (! PG_ARGISNULL(1)) {
     
-    if (data->next > data->nelements-1) {
-        data->elements = (int64*)repalloc(data->elements, sizeof(int64)*(data->nelements + SLICE_SIZE));
-        data->nelements = data->nelements + SLICE_SIZE;
+        int64 element = PG_GETARG_INT64(1);
+        
+        if (data->next > data->nelements-1) {
+            data->elements = (int64*)repalloc(data->elements, sizeof(int64)*(data->nelements + SLICE_SIZE));
+            data->nelements = data->nelements + SLICE_SIZE;
+        }
+        
+        data->elements[data->next++] = element;
+        
     }
-    
-    data->elements[data->next++] = element;
     
     MemoryContextSwitchTo(oldcontext);
     
