@@ -136,7 +136,14 @@ quantile_append_double(PG_FUNCTION_ARGS)
     
     struct_double * data;
     
-    MemoryContext oldcontext = MemoryContextSwitchTo(CurrentMemoryContext->parent);
+    MemoryContext oldcontext;
+    MemoryContext aggcontext;
+
+    if (! AggCheckCallContext(fcinfo, &aggcontext)) {
+        elog(ERROR, "quantile_append_double called in non-aggregate context");
+    }
+
+    oldcontext = MemoryContextSwitchTo(aggcontext);
         
     if (PG_ARGISNULL(0)) {
         data = (struct_double*)palloc(sizeof(struct_double));
@@ -177,7 +184,14 @@ quantile_append_double_array(PG_FUNCTION_ARGS)
     
     struct_double * data;
     
-    MemoryContext oldcontext = MemoryContextSwitchTo(CurrentMemoryContext->parent);
+    MemoryContext oldcontext;
+    MemoryContext aggcontext;
+
+    if (! AggCheckCallContext(fcinfo, &aggcontext)) {
+        elog(ERROR, "quantile_append_double_array called in non-aggregate context");
+    }
+
+    oldcontext = MemoryContextSwitchTo(aggcontext);
         
     if (PG_ARGISNULL(0)) {
         data = (struct_double*)palloc(sizeof(struct_double));
@@ -218,7 +232,14 @@ quantile_append_int32(PG_FUNCTION_ARGS)
     
     struct_int32 * data;
     
-    MemoryContext oldcontext = MemoryContextSwitchTo(CurrentMemoryContext->parent);
+    MemoryContext oldcontext;
+    MemoryContext aggcontext;
+
+    if (! AggCheckCallContext(fcinfo, &aggcontext)) {
+        elog(ERROR, "quantile_append_int32 called in non-aggregate context");
+    }
+
+    oldcontext = MemoryContextSwitchTo(aggcontext);
         
     if (PG_ARGISNULL(0)) {
         data = (struct_int32*)palloc(sizeof(struct_int32));
@@ -258,7 +279,14 @@ quantile_append_int32_array(PG_FUNCTION_ARGS)
     
     struct_int32 * data;
     
-    MemoryContext oldcontext = MemoryContextSwitchTo(CurrentMemoryContext->parent);
+    MemoryContext oldcontext;
+    MemoryContext aggcontext;
+
+    if (! AggCheckCallContext(fcinfo, &aggcontext)) {
+        elog(ERROR, "quantile_append_int32_array called in non-aggregate context");
+    }
+
+    oldcontext = MemoryContextSwitchTo(aggcontext);
         
     if (PG_ARGISNULL(0)) {
         data = (struct_int32*)palloc(sizeof(struct_int32));
@@ -299,7 +327,14 @@ quantile_append_int64(PG_FUNCTION_ARGS)
     
     struct_int64 * data;
     
-    MemoryContext oldcontext = MemoryContextSwitchTo(CurrentMemoryContext->parent);
+    MemoryContext oldcontext;
+    MemoryContext aggcontext;
+
+    if (! AggCheckCallContext(fcinfo, &aggcontext)) {
+        elog(ERROR, "quantile_append_int64 called in non-aggregate context");
+    }
+
+    oldcontext = MemoryContextSwitchTo(aggcontext);
         
     if (PG_ARGISNULL(0)) {
         data = (struct_int64*)palloc(sizeof(struct_int64));
@@ -339,7 +374,14 @@ quantile_append_int64_array(PG_FUNCTION_ARGS)
     
     struct_int64 * data;
     
-    MemoryContext oldcontext = MemoryContextSwitchTo(CurrentMemoryContext->parent);
+    MemoryContext oldcontext;
+    MemoryContext aggcontext;
+
+    if (! AggCheckCallContext(fcinfo, &aggcontext)) {
+        elog(ERROR, "quantile_append_int64_array called in non-aggregate context");
+    }
+
+    oldcontext = MemoryContextSwitchTo(aggcontext);
         
     if (PG_ARGISNULL(0)) {
         data = (struct_int64*)palloc(sizeof(struct_int64));
