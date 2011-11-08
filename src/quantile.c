@@ -12,8 +12,6 @@
 #include "utils/builtins.h"
 #include "catalog/pg_type.h"
 
-#include "funcapi.h"
-
 #ifdef PG_MODULE_MAGIC
 PG_MODULE_MAGIC;
 #endif
