@@ -16,22 +16,15 @@
 PG_MODULE_MAGIC;
 #endif
 
-#if __WORDSIZE == 64
-#define GET_POINTER(a,b)	(a*)(b)
-#define GET_INTEGER(a)		((int64)a)
-#else
-#define GET_POINTER(a,b)	(a*)((int32)b)
-#define GET_INTEGER(a)		((int32)a)
-#endif
-
 #define GET_AGG_CONTEXT(fname, fcinfo, aggcontext)  \
     if (! AggCheckCallContext(fcinfo, &aggcontext)) {   \
         elog(ERROR, "%s called in non-aggregate context", fname);  \
     }
 
 #define CHECK_AGG_CONTEXT(fname, fcinfo)  \
-    MemoryContext aggcontext;\
-    GET_AGG_CONTEXT(fname, fcinfo, aggcontext);
+    if (! AggCheckCallContext(fcinfo, NULL)) {   \
+        elog(ERROR, "%s called in non-aggregate context", fname);  \
+    }
 
 #define SLICE_SIZE 1024
 
@@ -186,7 +179,7 @@ quantile_append_double(PG_FUNCTION_ARGS)
         data->quantiles[0] = PG_GETARG_FLOAT8(2);
         data->nquantiles = 1;
     } else {
-        data = GET_POINTER(struct_double, PG_GETARG_INT64(0));
+        data = (struct_double*)PG_GETARG_POINTER(0);
     }
     
     /* ignore NULL values */
@@ -205,7 +198,7 @@ quantile_append_double(PG_FUNCTION_ARGS)
     
     MemoryContextSwitchTo(oldcontext);
     
-    PG_RETURN_INT64(GET_INTEGER(data));
+    PG_RETURN_POINTER(data);
 
 }
 
@@ -232,7 +225,7 @@ quantile_append_double_array(PG_FUNCTION_ARGS)
         data->quantiles = array_to_double(fcinfo, PG_GETARG_ARRAYTYPE_P(2), &data->nquantiles);
         
     } else {
-        data = GET_POINTER(struct_double, PG_GETARG_INT64(0));
+        data = (struct_double*)PG_GETARG_POINTER(0);
     }
     
     /* ignore NULL values */
@@ -251,7 +244,7 @@ quantile_append_double_array(PG_FUNCTION_ARGS)
     
     MemoryContextSwitchTo(oldcontext);
     
-    PG_RETURN_INT64(GET_INTEGER(data));
+    PG_RETURN_POINTER(data);
 
 }
 
@@ -278,7 +271,7 @@ quantile_append_numeric(PG_FUNCTION_ARGS)
         data->quantiles[0] = PG_GETARG_FLOAT8(2);
         data->nquantiles = 1;
     } else {
-        data = GET_POINTER(struct_numeric, PG_GETARG_INT64(0));
+        data = (struct_numeric*)PG_GETARG_POINTER(0);
     }
     
     /* ignore NULL values */
@@ -297,7 +290,7 @@ quantile_append_numeric(PG_FUNCTION_ARGS)
     
     MemoryContextSwitchTo(oldcontext);
     
-    PG_RETURN_INT64(GET_INTEGER(data));
+    PG_RETURN_POINTER(data);
 
 }
 
@@ -324,7 +317,7 @@ quantile_append_numeric_array(PG_FUNCTION_ARGS)
         data->quantiles = array_to_double(fcinfo, PG_GETARG_ARRAYTYPE_P(2), &data->nquantiles);
         
     } else {
-        data = GET_POINTER(struct_numeric, PG_GETARG_INT64(0));
+        data = (struct_numeric*)PG_GETARG_POINTER(0);
     }
     
     /* ignore NULL values */
@@ -343,7 +336,7 @@ quantile_append_numeric_array(PG_FUNCTION_ARGS)
     
     MemoryContextSwitchTo(oldcontext);
     
-    PG_RETURN_INT64(GET_INTEGER(data));
+    PG_RETURN_POINTER(data);
 
 }
 
@@ -369,7 +362,7 @@ quantile_append_int32(PG_FUNCTION_ARGS)
         data->quantiles[0] = PG_GETARG_FLOAT8(2);
         data->next = 0;
     } else {
-        data = GET_POINTER(struct_int32, PG_GETARG_INT64(0));
+        data = (struct_int32*)PG_GETARG_POINTER(0);
     }
     
     /* ignore NULL values */
@@ -388,7 +381,7 @@ quantile_append_int32(PG_FUNCTION_ARGS)
     
     MemoryContextSwitchTo(oldcontext);
     
-    PG_RETURN_INT64(GET_INTEGER(data));
+    PG_RETURN_POINTER(data);
 
 }
 
@@ -415,7 +408,7 @@ quantile_append_int32_array(PG_FUNCTION_ARGS)
         data->quantiles = array_to_double(fcinfo, PG_GETARG_ARRAYTYPE_P(2), &data->nquantiles);
         
     } else {
-        data = GET_POINTER(struct_int32, PG_GETARG_INT64(0));
+        data = (struct_int32*)PG_GETARG_POINTER(0);
     }
     
     /* ignore NULL values */
@@ -434,7 +427,7 @@ quantile_append_int32_array(PG_FUNCTION_ARGS)
     
     MemoryContextSwitchTo(oldcontext);
     
-    PG_RETURN_INT64(GET_INTEGER(data));
+    PG_RETURN_POINTER(data);
 
 }
 
@@ -460,7 +453,7 @@ quantile_append_int64(PG_FUNCTION_ARGS)
         data->quantiles[0] = PG_GETARG_FLOAT8(2);
         data->next = 0;
     } else {
-        data = GET_POINTER(struct_int64, PG_GETARG_INT64(0));
+        data = (struct_int64*)PG_GETARG_POINTER(0);
     }
     
     /* ignore NULL values */
@@ -479,7 +472,7 @@ quantile_append_int64(PG_FUNCTION_ARGS)
     
     MemoryContextSwitchTo(oldcontext);
     
-    PG_RETURN_INT64(GET_INTEGER(data));
+    PG_RETURN_POINTER(data);
 
 }
 
@@ -506,7 +499,7 @@ quantile_append_int64_array(PG_FUNCTION_ARGS)
         data->quantiles = array_to_double(fcinfo, PG_GETARG_ARRAYTYPE_P(2), &data->nquantiles);
         
     } else {
-        data = GET_POINTER(struct_int64, PG_GETARG_INT64(0));
+        data = (struct_int64*)PG_GETARG_POINTER(0);
     }
     
     /* ignore NULL values */
@@ -525,7 +518,7 @@ quantile_append_int64_array(PG_FUNCTION_ARGS)
     
     MemoryContextSwitchTo(oldcontext);
     
-    PG_RETURN_INT64(GET_INTEGER(data));
+    PG_RETURN_POINTER(data);
 
 }
 
@@ -544,7 +537,7 @@ quantile_double(PG_FUNCTION_ARGS)
         PG_RETURN_NULL();
     }
     
-    data = GET_POINTER(struct_double, PG_GETARG_INT64(0));
+    data = (struct_double*)PG_GETARG_POINTER(0);
     
     /* FIXME alloc in the upper memory context */
     result = palloc(data->nquantiles * sizeof(double));
@@ -576,7 +569,7 @@ quantile_double_array(PG_FUNCTION_ARGS)
         PG_RETURN_NULL();
     }
     
-    data = GET_POINTER(struct_double, PG_GETARG_INT64(0));
+    data = (struct_double*)PG_GETARG_POINTER(0);
     
     /* FIXME alloc in the upper memory context */
     result = palloc(data->nquantiles * sizeof(double));
@@ -613,7 +606,7 @@ quantile_int32(PG_FUNCTION_ARGS)
         PG_RETURN_NULL();
     }
     
-    data = GET_POINTER(struct_int32, PG_GETARG_INT64(0));
+    data = (struct_int32*)PG_GETARG_POINTER(0);
     
     qsort(data->elements, data->next, sizeof(int32), &int32_comparator);
     
@@ -641,7 +634,7 @@ quantile_int32_array(PG_FUNCTION_ARGS)
         PG_RETURN_NULL();
     }
     
-    data = GET_POINTER(struct_int32, PG_GETARG_INT64(0));
+    data = (struct_int32*)PG_GETARG_POINTER(0);
     
     /* FIXME alloc in the upper memory context */
     result = palloc(data->nquantiles * sizeof(int32));
@@ -678,7 +671,7 @@ quantile_int64(PG_FUNCTION_ARGS)
         PG_RETURN_NULL();
     }
     
-    data = GET_POINTER(struct_int64, PG_GETARG_INT64(0));
+    data = (struct_int64*)PG_GETARG_POINTER(0);
     
     qsort(data->elements, data->next, sizeof(int64), &int64_comparator);
     
@@ -706,7 +699,7 @@ quantile_int64_array(PG_FUNCTION_ARGS)
         PG_RETURN_NULL();
     }
     
-    data = GET_POINTER(struct_int64, PG_GETARG_INT64(0));
+    data = (struct_int64*)PG_GETARG_POINTER(0);
     
     /* FIXME alloc in the upper memory context */
     result = palloc(data->nquantiles * sizeof(int64));
@@ -744,7 +737,7 @@ quantile_numeric(PG_FUNCTION_ARGS)
         PG_RETURN_NULL();
     }
     
-    data = GET_POINTER(struct_numeric, PG_GETARG_INT64(0));
+    data = (struct_numeric*)PG_GETARG_POINTER(0);
     
     qsort(data->elements, data->next, sizeof(Numeric), &numeric_comparator);
     
@@ -772,7 +765,7 @@ quantile_numeric_array(PG_FUNCTION_ARGS)
         PG_RETURN_NULL();
     }
     
-    data = GET_POINTER(struct_numeric, PG_GETARG_INT64(0));
+    data = (struct_numeric*)PG_GETARG_POINTER(0);
     
     /* FIXME alloc in the upper memory context */
     result = palloc(data->nquantiles * sizeof(Numeric));
@@ -796,6 +789,8 @@ quantile_numeric_array(PG_FUNCTION_ARGS)
     return numeric_to_array(fcinfo, result, data->nquantiles);
 
 }
+
+/* Comparators for the qsort() calls. */
 
 static int  double_comparator(const void *a, const void *b) {
     double af = (*(double*)a);
@@ -831,7 +826,10 @@ static int  numeric_comparator(const void *a, const void *b) {
 }
 
 /*
- * common code for array_to_text and array_to_text_null functions
+ * Reading quantiles from an input array, based mostly on
+ * array_to_text_internal (it's a modified copy). This expects
+ * to receive a single-dimensional float8 array as input, fails
+ * otherwise.
  */
 static double *
 array_to_double(FunctionCallInfo fcinfo, ArrayType *v, int * len)
@@ -922,9 +920,8 @@ array_to_double(FunctionCallInfo fcinfo, ArrayType *v, int * len)
 }
 
 /*
- * common code for text_to_array and text_to_array_null functions
- *
- * These are not strict so we have to test for null inputs explicitly.
+ * Helper functions used to prepare the resulting array (when there's
+ * an array of quantiles).
  */
 static Datum
 double_to_array(FunctionCallInfo fcinfo, double * d, int len) {
@@ -946,12 +943,6 @@ double_to_array(FunctionCallInfo fcinfo, double * d, int len) {
                                           CurrentMemoryContext));
 }
 
-
-/*
- * common code for text_to_array and text_to_array_null functions
- *
- * These are not strict so we have to test for null inputs explicitly.
- */
 static Datum
 int32_to_array(FunctionCallInfo fcinfo, int32 * d, int len) {
     
@@ -972,12 +963,6 @@ int32_to_array(FunctionCallInfo fcinfo, int32 * d, int len) {
                                           CurrentMemoryContext));
 }
 
-
-/*
- * common code for text_to_array and text_to_array_null functions
- *
- * These are not strict so we have to test for null inputs explicitly.
- */
 static Datum
 int64_to_array(FunctionCallInfo fcinfo, int64 * d, int len) {
     
@@ -999,13 +984,6 @@ int64_to_array(FunctionCallInfo fcinfo, int64 * d, int len) {
                                           CurrentMemoryContext));
 }
 
-
-
-/*
- * common code for text_to_array and text_to_array_null functions
- *
- * These are not strict so we have to test for null inputs explicitly.
- */
 static Datum
 numeric_to_array(FunctionCallInfo fcinfo, Numeric * d, int len) {
     
