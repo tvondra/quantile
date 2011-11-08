@@ -9,6 +9,7 @@
 #include "utils/palloc.h"
 #include "utils/array.h"
 #include "utils/lsyscache.h"
+#include "utils/numeric.h"
 #include "nodes/memnodes.h"
 #include "fmgr.h"
 #include "catalog/pg_type.h"
@@ -65,11 +66,23 @@ typedef struct struct_int64 {
     
 } struct_int64;
 
+typedef struct struct_numeric {
+    
+    int nquantiles;
+    int nelements;
+    int next;
+    
+    double * quantiles;
+    Numeric * elements;
+    
+} struct_numeric;
+
 /* comparators, used for qsort */
 
 static int  double_comparator(const void *a, const void *b);
 static int  int32_comparator(const void *a, const void *b);
 static int  int64_comparator(const void *a, const void *b);
+static int  numeric_comparator(const void *a, const void *b);
 
 /* parse the quantiles array */
 static double *
@@ -83,6 +96,9 @@ int32_to_array(FunctionCallInfo fcinfo, int32 * d, int len);
 
 static Datum
 int64_to_array(FunctionCallInfo fcinfo, int64 * d, int len);
+
+static Datum
+numeric_to_array(FunctionCallInfo fcinfo, Numeric * d, int len);
 
 /* prototypes */
 PG_FUNCTION_INFO_V1(quantile_append_double_array);
@@ -103,6 +119,12 @@ PG_FUNCTION_INFO_V1(quantile_append_int64);
 PG_FUNCTION_INFO_V1(quantile_int64_array);
 PG_FUNCTION_INFO_V1(quantile_int64);
 
+PG_FUNCTION_INFO_V1(quantile_append_numeric_array);
+PG_FUNCTION_INFO_V1(quantile_append_numeric);
+
+PG_FUNCTION_INFO_V1(quantile_numeric_array);
+PG_FUNCTION_INFO_V1(quantile_numeric);
+
 Datum quantile_append_double_array(PG_FUNCTION_ARGS);
 Datum quantile_append_double(PG_FUNCTION_ARGS);
 
@@ -120,6 +142,12 @@ Datum quantile_append_int64(PG_FUNCTION_ARGS);
 
 Datum quantile_int64_array(PG_FUNCTION_ARGS);
 Datum quantile_int64(PG_FUNCTION_ARGS);
+
+Datum quantile_append_numeric_array(PG_FUNCTION_ARGS);
+Datum quantile_append_numeric(PG_FUNCTION_ARGS);
+
+Datum quantile_numeric_array(PG_FUNCTION_ARGS);
+Datum quantile_numeric(PG_FUNCTION_ARGS);
 
 /* These functions use a bit dirty trick to pass the data - the int
  * value is actually a pointer to the array allocated in the parent
@@ -213,6 +241,102 @@ quantile_append_double_array(PG_FUNCTION_ARGS)
         
         if (data->next > data->nelements-1) {
             data->elements = (double*)repalloc(data->elements, sizeof(double)*(data->nelements + SLICE_SIZE));
+            data->nelements = data->nelements + SLICE_SIZE;
+        }
+        
+        data->elements[data->next++] = element;
+        
+    }
+    
+    MemoryContextSwitchTo(oldcontext);
+    
+    PG_RETURN_INT64(GET_INTEGER(data));
+
+}
+
+Datum
+quantile_append_numeric(PG_FUNCTION_ARGS)
+{
+    
+    struct_numeric * data;
+    
+    MemoryContext oldcontext;
+    MemoryContext aggcontext;
+
+    if (! AggCheckCallContext(fcinfo, &aggcontext)) {
+        elog(ERROR, "quantile_append_numeric called in non-aggregate context");
+    }
+
+    oldcontext = MemoryContextSwitchTo(aggcontext);
+        
+    if (PG_ARGISNULL(0)) {
+        data = (struct_numeric*)palloc(sizeof(struct_numeric));
+        data->elements  = (Numeric*)palloc(SLICE_SIZE*sizeof(Numeric));
+        data->nelements = SLICE_SIZE;
+        data->next = 0;
+        
+        data->quantiles = (double*)palloc(sizeof(double));
+        data->quantiles[0] = PG_GETARG_FLOAT8(2);
+        data->nquantiles = 1;
+    } else {
+        data = GET_POINTER(struct_numeric, PG_GETARG_INT64(0));
+    }
+    
+    /* ignore NULL values */
+    if (! PG_ARGISNULL(1)) {
+    
+        Numeric element = PG_GETARG_NUMERIC(1);
+        
+        if (data->next > data->nelements-1) {
+            data->elements = (Numeric*)repalloc(data->elements, sizeof(Numeric)*(data->nelements + SLICE_SIZE));
+            data->nelements = data->nelements + SLICE_SIZE;
+        }
+        
+        data->elements[data->next++] = element;
+        
+    }
+    
+    MemoryContextSwitchTo(oldcontext);
+    
+    PG_RETURN_INT64(GET_INTEGER(data));
+
+}
+
+Datum
+quantile_append_numeric_array(PG_FUNCTION_ARGS)
+{
+    
+    struct_numeric * data;
+    
+    MemoryContext oldcontext;
+    MemoryContext aggcontext;
+
+    if (! AggCheckCallContext(fcinfo, &aggcontext)) {
+        elog(ERROR, "quantile_append_numeric_array called in non-aggregate context");
+    }
+
+    oldcontext = MemoryContextSwitchTo(aggcontext);
+        
+    if (PG_ARGISNULL(0)) {
+        data = (struct_numeric*)palloc(sizeof(struct_numeric));
+        data->elements  = (Numeric*)palloc(SLICE_SIZE*sizeof(Numeric));
+        data->nelements = SLICE_SIZE;
+        data->next = 0;
+        
+        /* read the array of quantiles */
+        data->quantiles = array_to_double(fcinfo, PG_GETARG_ARRAYTYPE_P(2), &data->nquantiles);
+        
+    } else {
+        data = GET_POINTER(struct_numeric, PG_GETARG_INT64(0));
+    }
+    
+    /* ignore NULL values */
+    if (! PG_ARGISNULL(1)) {
+    
+        Numeric element = PG_GETARG_NUMERIC(1);
+        
+        if (data->next > data->nelements-1) {
+            data->elements = (Numeric*)repalloc(data->elements, sizeof(Numeric)*(data->nelements + SLICE_SIZE));
             data->nelements = data->nelements + SLICE_SIZE;
         }
         
@@ -606,6 +730,68 @@ quantile_int64_array(PG_FUNCTION_ARGS)
 
 }
 
+Datum
+quantile_numeric(PG_FUNCTION_ARGS)
+{
+    
+    int idx;
+    struct_numeric * data;
+    
+    if (PG_ARGISNULL(0)) {
+        PG_RETURN_NULL();
+    }
+    
+    data = GET_POINTER(struct_numeric, PG_GETARG_INT64(0));
+    
+    qsort(data->elements, data->next, sizeof(Numeric), &numeric_comparator);
+    
+    if (data->quantiles[0] > 0) {
+        idx = (int)ceil(data->next * data->quantiles[0]) - 1;
+    } else {
+        idx = 0;
+    }
+    
+    PG_RETURN_NUMERIC(data->elements[idx]);
+
+}
+
+Datum
+quantile_numeric_array(PG_FUNCTION_ARGS)
+{
+    
+    int i, idx = 0;
+    struct_numeric * data;
+    Numeric * result;
+    
+    if (PG_ARGISNULL(0)) {
+        PG_RETURN_NULL();
+    }
+    
+    data = GET_POINTER(struct_numeric, PG_GETARG_INT64(0));
+    
+    /* FIXME alloc in the upper memory context */
+    result = palloc(data->nquantiles * sizeof(Numeric));
+    
+    qsort(data->elements, data->next, sizeof(Numeric), &numeric_comparator);
+
+    for (i = 0; i < data->nquantiles; i++) {
+        
+        if ((data->quantiles[i] > 0) && (data->quantiles[i] < 1)) {
+            idx = (int)ceil(data->next * data->quantiles[i]) - 1;
+        } else if (data->quantiles[i] <= 0) {
+            idx = 0;
+        } else if (data->quantiles[i] >= 1) {
+            idx = data->next - 1;
+        }
+        
+        result[i] = data->elements[idx];
+        
+    }
+
+    return numeric_to_array(fcinfo, result, data->nquantiles);
+
+}
+
 static int  double_comparator(const void *a, const void *b) {
     double af = (*(double*)a);
     double bf = (*(double*)b);
@@ -622,6 +808,30 @@ static int  int64_comparator(const void *a, const void *b) {
     int64 af = (*(int64*)a);
     int64 bf = (*(int64*)b);
     return (af > bf) - (af < bf);
+}
+
+static int  numeric_comparator(const void *a, const void *b) {
+	
+	FmgrInfo finfo;
+	Datum result;
+	FunctionCallInfoData fcinfo;
+	
+	/* lookup the function */
+	fmgr_info(1769, &finfo);
+	
+	/* init */
+	InitFunctionCallInfoData(fcinfo, &finfo, 0, InvalidOid, NULL, NULL);
+	
+	/* set params */
+	fcinfo.arg[0] = NumericGetDatum(*(Numeric*)a);
+	fcinfo.arg[1] = NumericGetDatum(*(Numeric*)b);
+	fcinfo.argnull[0] = false;
+	fcinfo.argnull[1] = false;
+	
+	/* call */
+	result = FunctionCallInvoke(&fcinfo);
+	
+	return (DatumGetInt32(result));
 }
 
 /*
@@ -785,6 +995,34 @@ int64_to_array(FunctionCallInfo fcinfo, int64 * d, int len) {
                                   Int64GetDatum(d[i]),
                                   false,
                                   INT8OID,
+                                  CurrentMemoryContext);
+        
+    }
+
+    PG_RETURN_ARRAYTYPE_P(makeArrayResult(astate,
+                                          CurrentMemoryContext));
+}
+
+
+
+/*
+ * common code for text_to_array and text_to_array_null functions
+ *
+ * These are not strict so we have to test for null inputs explicitly.
+ */
+static Datum
+numeric_to_array(FunctionCallInfo fcinfo, Numeric * d, int len) {
+    
+    ArrayBuildState *astate = NULL;
+    int         i;
+
+    for (i = 0; i < len; i++) {
+
+        /* stash away this field */
+        astate = accumArrayResult(astate,
+                                  NumericGetDatum(d[i]),
+                                  false,
+                                  NUMERICOID,
                                   CurrentMemoryContext);
         
     }

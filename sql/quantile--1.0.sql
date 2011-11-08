@@ -31,6 +31,39 @@ CREATE AGGREGATE quantile(double precision, double precision[]) (
     FINALFUNC = quantile_double_array
 );
 
+/* quantile for the numeric */
+CREATE OR REPLACE FUNCTION quantile_append_numeric(p_pointer bigint, p_element numeric, p_quantiles double precision)
+    RETURNS bigint
+    AS 'quantile', 'quantile_append_numeric'
+    LANGUAGE C IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION quantile_append_numeric_array(p_pointer bigint, p_element numeric, p_quantiles double precision[])
+    RETURNS bigint
+    AS 'quantile', 'quantile_append_numeric_array'
+    LANGUAGE C IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION quantile_numeric(p_pointer bigint)
+    RETURNS numeric
+    AS 'quantile', 'quantile_numeric'
+    LANGUAGE C IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION quantile_numeric_array(p_pointer bigint)
+    RETURNS numeric[]
+    AS 'quantile', 'quantile_numeric_array'
+    LANGUAGE C IMMUTABLE;
+
+CREATE AGGREGATE quantile(numeric, double precision) (
+    SFUNC = quantile_append_numeric,
+    STYPE = bigint,
+    FINALFUNC = quantile_numeric
+);
+
+CREATE AGGREGATE quantile(numeric, double precision[]) (
+    SFUNC = quantile_append_numeric_array,
+    STYPE = bigint,
+    FINALFUNC = quantile_numeric_array
+);
+
 /* quantile for the int32 */
 CREATE OR REPLACE FUNCTION quantile_append_int32(p_pointer bigint, p_element int, p_quantile double precision)
     RETURNS bigint
