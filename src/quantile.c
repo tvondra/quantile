@@ -30,6 +30,9 @@ PG_MODULE_MAGIC;
 
 #define SLICE_SIZE 1024
 
+/* was the numeric comparator initialized? */
+static bool initialized = false;
+
 /* Structures used to keep the data - the 'elements' array is extended
  * on the fly if needed. */
 
@@ -859,16 +862,21 @@ static int  int64_comparator(const void *a, const void *b) {
 }
 
 static int  numeric_comparator(const void *a, const void *b) {
-	
-	FmgrInfo finfo;
-	Datum result;
-	FunctionCallInfoData fcinfo;
-	
-	/* lookup the function */
-	fmgr_info(1769, &finfo);
-	
-	/* init */
-	InitFunctionCallInfoData(fcinfo, &finfo, 0, InvalidOid, NULL, NULL);
+
+	static FmgrInfo finfo;
+	static Datum result;
+	static FunctionCallInfoData fcinfo;
+
+	/* first call, so lookup the function etc. */
+	if (! initialized) {
+
+		/* lookup the function, init the call info  */
+		fmgr_info(1769, &finfo);
+		InitFunctionCallInfoData(fcinfo, &finfo, 0, InvalidOid, NULL, NULL);
+		
+		initialized = true;
+		
+	}
 	
 	/* set params */
 	fcinfo.arg[0] = NumericGetDatum(*(Numeric*)a);
