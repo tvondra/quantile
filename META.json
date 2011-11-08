@@ -2,7 +2,7 @@
    "name": "quantile",
    "abstract": "Aggregate for computing various quantiles (median, quartiles etc.) efficiently.",
    "description": "An extension written in C that allows you to evaluate various quantiles (with float and integer types) efficiently. It collects all the data in memory and allows you to compute multiple quantiles at the same time.",
-   "version": "1.0.0",
+   "version": "1.1.0",
    "maintainer": "Tomas Vondra <tv@fuzzy.cz>",
    "license": "gpl_3",
    "prereqs": {
@@ -16,6 +16,10 @@
      "quantile": {
        "file": "sql/quantile--1.0.sql",
        "version": "1.0.0"
+     },
+     "quantile": {
+       "file": "sql/quantile--1.1.sql",
+       "version": "1.1.0"
      }
    },
    "resources": {
