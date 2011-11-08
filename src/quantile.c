@@ -6,12 +6,10 @@
 #include <limits.h>
 
 #include "postgres.h"
-#include "utils/palloc.h"
 #include "utils/array.h"
 #include "utils/lsyscache.h"
 #include "utils/numeric.h"
-#include "nodes/memnodes.h"
-#include "fmgr.h"
+#include "utils/builtins.h"
 #include "catalog/pg_type.h"
 
 #include "funcapi.h"
@@ -29,9 +27,6 @@ PG_MODULE_MAGIC;
 #endif
 
 #define SLICE_SIZE 1024
-
-/* was the numeric comparator initialized? */
-static bool initialized = false;
 
 /* Structures used to keep the data - the 'elements' array is extended
  * on the fly if needed. */
@@ -863,31 +858,17 @@ static int  int64_comparator(const void *a, const void *b) {
 
 static int  numeric_comparator(const void *a, const void *b) {
 
-	static FmgrInfo finfo;
-	static Datum result;
-	static FunctionCallInfoData fcinfo;
-
-	/* first call, so lookup the function etc. */
-	if (! initialized) {
-
-		/* lookup the function, init the call info  */
-		fmgr_info(1769, &finfo);
-		InitFunctionCallInfoData(fcinfo, &finfo, 0, InvalidOid, NULL, NULL);
-		
-		initialized = true;
-		
-	}
-	
-	/* set params */
-	fcinfo.arg[0] = NumericGetDatum(*(Numeric*)a);
-	fcinfo.arg[1] = NumericGetDatum(*(Numeric*)b);
-	fcinfo.argnull[0] = false;
-	fcinfo.argnull[1] = false;
-	
-	/* call */
-	result = FunctionCallInvoke(&fcinfo);
-	
-	return (DatumGetInt32(result));
+    FunctionCallInfoData fcinfo;
+    
+    /* set params */
+    fcinfo.arg[0] = NumericGetDatum(*(Numeric*)a);
+    fcinfo.arg[1] = NumericGetDatum(*(Numeric*)b);
+    fcinfo.argnull[0] = false;
+    fcinfo.argnull[1] = false;
+    
+    /* return the result */
+    return DatumGetInt32(numeric_cmp(&fcinfo));
+    
 }
 
 /*
