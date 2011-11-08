@@ -24,6 +24,15 @@ PG_MODULE_MAGIC;
 #define GET_INTEGER(a)		((int32)a)
 #endif
 
+#define GET_AGG_CONTEXT(fname, fcinfo, aggcontext)  \
+    if (! AggCheckCallContext(fcinfo, &aggcontext)) {   \
+        elog(ERROR, "%s called in non-aggregate context", fname);  \
+    }
+
+#define CHECK_AGG_CONTEXT(fname, fcinfo)  \
+    MemoryContext aggcontext;\
+    GET_AGG_CONTEXT(fname, fcinfo, aggcontext);
+
 #define SLICE_SIZE 1024
 
 /* Structures used to keep the data - the 'elements' array is extended
@@ -163,9 +172,7 @@ quantile_append_double(PG_FUNCTION_ARGS)
     MemoryContext oldcontext;
     MemoryContext aggcontext;
 
-    if (! AggCheckCallContext(fcinfo, &aggcontext)) {
-        elog(ERROR, "quantile_append_double called in non-aggregate context");
-    }
+    GET_AGG_CONTEXT("quantile_append_double", fcinfo, aggcontext);
 
     oldcontext = MemoryContextSwitchTo(aggcontext);
         
@@ -211,9 +218,7 @@ quantile_append_double_array(PG_FUNCTION_ARGS)
     MemoryContext oldcontext;
     MemoryContext aggcontext;
 
-    if (! AggCheckCallContext(fcinfo, &aggcontext)) {
-        elog(ERROR, "quantile_append_double_array called in non-aggregate context");
-    }
+    GET_AGG_CONTEXT("quantile_append_double_array", fcinfo, aggcontext);
 
     oldcontext = MemoryContextSwitchTo(aggcontext);
         
@@ -259,10 +264,8 @@ quantile_append_numeric(PG_FUNCTION_ARGS)
     MemoryContext oldcontext;
     MemoryContext aggcontext;
 
-    if (! AggCheckCallContext(fcinfo, &aggcontext)) {
-        elog(ERROR, "quantile_append_numeric called in non-aggregate context");
-    }
-
+    GET_AGG_CONTEXT("quantile_append_numeric", fcinfo, aggcontext);
+    
     oldcontext = MemoryContextSwitchTo(aggcontext);
         
     if (PG_ARGISNULL(0)) {
@@ -307,9 +310,7 @@ quantile_append_numeric_array(PG_FUNCTION_ARGS)
     MemoryContext oldcontext;
     MemoryContext aggcontext;
 
-    if (! AggCheckCallContext(fcinfo, &aggcontext)) {
-        elog(ERROR, "quantile_append_numeric_array called in non-aggregate context");
-    }
+    GET_AGG_CONTEXT("quantile_append_numeric_array", fcinfo, aggcontext);
 
     oldcontext = MemoryContextSwitchTo(aggcontext);
         
@@ -355,9 +356,7 @@ quantile_append_int32(PG_FUNCTION_ARGS)
     MemoryContext oldcontext;
     MemoryContext aggcontext;
 
-    if (! AggCheckCallContext(fcinfo, &aggcontext)) {
-        elog(ERROR, "quantile_append_int32 called in non-aggregate context");
-    }
+    GET_AGG_CONTEXT("quantile_append_int32", fcinfo, aggcontext);
 
     oldcontext = MemoryContextSwitchTo(aggcontext);
         
@@ -402,10 +401,8 @@ quantile_append_int32_array(PG_FUNCTION_ARGS)
     MemoryContext oldcontext;
     MemoryContext aggcontext;
 
-    if (! AggCheckCallContext(fcinfo, &aggcontext)) {
-        elog(ERROR, "quantile_append_int32_array called in non-aggregate context");
-    }
-
+    GET_AGG_CONTEXT("quantile_append_int32_array", fcinfo, aggcontext);
+    
     oldcontext = MemoryContextSwitchTo(aggcontext);
         
     if (PG_ARGISNULL(0)) {
@@ -450,9 +447,7 @@ quantile_append_int64(PG_FUNCTION_ARGS)
     MemoryContext oldcontext;
     MemoryContext aggcontext;
 
-    if (! AggCheckCallContext(fcinfo, &aggcontext)) {
-        elog(ERROR, "quantile_append_int64 called in non-aggregate context");
-    }
+    GET_AGG_CONTEXT("quantile_append_int64", fcinfo, aggcontext);
 
     oldcontext = MemoryContextSwitchTo(aggcontext);
         
@@ -497,9 +492,7 @@ quantile_append_int64_array(PG_FUNCTION_ARGS)
     MemoryContext oldcontext;
     MemoryContext aggcontext;
 
-    if (! AggCheckCallContext(fcinfo, &aggcontext)) {
-        elog(ERROR, "quantile_append_int64_array called in non-aggregate context");
-    }
+    GET_AGG_CONTEXT("quantile_append_int64_array", fcinfo, aggcontext);
 
     oldcontext = MemoryContextSwitchTo(aggcontext);
         
@@ -544,12 +537,8 @@ quantile_double(PG_FUNCTION_ARGS)
     double *result;
     
     struct_double * data;
-	
-	MemoryContext aggcontext;
-
-    if (! AggCheckCallContext(fcinfo, &aggcontext)) {
-        elog(ERROR, "quantile_double called in non-aggregate context");
-    }
+    
+    CHECK_AGG_CONTEXT("quantile_double", fcinfo);
     
     if (PG_ARGISNULL(0)) {
         PG_RETURN_NULL();
@@ -580,12 +569,8 @@ quantile_double_array(PG_FUNCTION_ARGS)
     double * result;
     
     struct_double * data;
-	
-	MemoryContext aggcontext;
-
-    if (! AggCheckCallContext(fcinfo, &aggcontext)) {
-        elog(ERROR, "quantile_double_array called in non-aggregate context");
-    }
+    
+    CHECK_AGG_CONTEXT("quantile_double_array", fcinfo);
     
     if (PG_ARGISNULL(0)) {
         PG_RETURN_NULL();
@@ -621,12 +606,8 @@ quantile_int32(PG_FUNCTION_ARGS)
     
     int idx;
     struct_int32 * data;
-	
-	MemoryContext aggcontext;
-
-    if (! AggCheckCallContext(fcinfo, &aggcontext)) {
-        elog(ERROR, "quantile_int32 called in non-aggregate context");
-    }
+    
+    CHECK_AGG_CONTEXT("quantile_int32", fcinfo);
     
     if (PG_ARGISNULL(0)) {
         PG_RETURN_NULL();
@@ -653,12 +634,8 @@ quantile_int32_array(PG_FUNCTION_ARGS)
     int i, idx = 0;
     struct_int32 * data;
     int32 * result;
-	
-	MemoryContext aggcontext;
-
-    if (! AggCheckCallContext(fcinfo, &aggcontext)) {
-        elog(ERROR, "quantile_int32_array called in non-aggregate context");
-    }
+    
+    CHECK_AGG_CONTEXT("quantile_int32_array", fcinfo);
     
     if (PG_ARGISNULL(0)) {
         PG_RETURN_NULL();
@@ -694,12 +671,8 @@ quantile_int64(PG_FUNCTION_ARGS)
     
     int idx;
     struct_int64 * data;
-	
-	MemoryContext aggcontext;
-
-    if (! AggCheckCallContext(fcinfo, &aggcontext)) {
-        elog(ERROR, "quantile_int64 called in non-aggregate context");
-    }
+    
+    CHECK_AGG_CONTEXT("quantile_int64", fcinfo);
     
     if (PG_ARGISNULL(0)) {
         PG_RETURN_NULL();
@@ -726,12 +699,8 @@ quantile_int64_array(PG_FUNCTION_ARGS)
     int i, idx = 0;
     struct_int64 * data;
     int64 * result;
-	
-	MemoryContext aggcontext;
-
-    if (! AggCheckCallContext(fcinfo, &aggcontext)) {
-        elog(ERROR, "quantile_int64_array called in non-aggregate context");
-    }
+    
+    CHECK_AGG_CONTEXT("quantile_int64_array", fcinfo);
     
     if (PG_ARGISNULL(0)) {
         PG_RETURN_NULL();
@@ -768,12 +737,8 @@ quantile_numeric(PG_FUNCTION_ARGS)
     
     int idx;
     struct_numeric * data;
-	
-	MemoryContext aggcontext;
-
-    if (! AggCheckCallContext(fcinfo, &aggcontext)) {
-        elog(ERROR, "quantile_numeric called in non-aggregate context");
-    }
+    
+    CHECK_AGG_CONTEXT("quantile_numeric", fcinfo);
     
     if (PG_ARGISNULL(0)) {
         PG_RETURN_NULL();
@@ -800,12 +765,8 @@ quantile_numeric_array(PG_FUNCTION_ARGS)
     int i, idx = 0;
     struct_numeric * data;
     Numeric * result;
-	
-	MemoryContext aggcontext;
-
-    if (! AggCheckCallContext(fcinfo, &aggcontext)) {
-        elog(ERROR, "quantile_numeric_array called in non-aggregate context");
-    }
+    
+    CHECK_AGG_CONTEXT("quantile_numeric_array", fcinfo);
     
     if (PG_ARGISNULL(0)) {
         PG_RETURN_NULL();
