@@ -61,3 +61,9 @@ manually
   $ psql dbname < `pg_config --sharedir`/contrib/quantile--1.0.sql
 
 That's all.
+
+
+License
+-------
+This software is distributed under the terms of GPL v3 license. See
+LICENSE or http://www.gnu.org/copyleft/gpl.html for more details.

@@ -1,3 +1,25 @@
+/*
+* quantile.c - Quantile aggregate function
+* Copyright (C) Tomas Vondra, 2011
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see <http://www.gnu.org/licenses/>.
+*
+* TODO Take care of the memory consumption (respect work_mem, flush
+* the data to disk if more space is needed and use merge sort, i.e.
+* something like the ORDER BY uses).
+*/
+
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
@@ -539,7 +561,6 @@ quantile_double(PG_FUNCTION_ARGS)
     
     data = (struct_double*)PG_GETARG_POINTER(0);
     
-    /* FIXME alloc in the upper memory context */
     result = palloc(data->nquantiles * sizeof(double));
     
     qsort(data->elements, data->next, sizeof(double), &double_comparator);
@@ -571,7 +592,6 @@ quantile_double_array(PG_FUNCTION_ARGS)
     
     data = (struct_double*)PG_GETARG_POINTER(0);
     
-    /* FIXME alloc in the upper memory context */
     result = palloc(data->nquantiles * sizeof(double));
     
     qsort(data->elements, data->next, sizeof(double), &double_comparator);
@@ -636,7 +656,6 @@ quantile_int32_array(PG_FUNCTION_ARGS)
     
     data = (struct_int32*)PG_GETARG_POINTER(0);
     
-    /* FIXME alloc in the upper memory context */
     result = palloc(data->nquantiles * sizeof(int32));
     
     qsort(data->elements, data->next, sizeof(int32), &int32_comparator);
@@ -701,7 +720,6 @@ quantile_int64_array(PG_FUNCTION_ARGS)
     
     data = (struct_int64*)PG_GETARG_POINTER(0);
     
-    /* FIXME alloc in the upper memory context */
     result = palloc(data->nquantiles * sizeof(int64));
     
     qsort(data->elements, data->next, sizeof(int64), &int64_comparator);
@@ -767,7 +785,6 @@ quantile_numeric_array(PG_FUNCTION_ARGS)
     
     data = (struct_numeric*)PG_GETARG_POINTER(0);
     
-    /* FIXME alloc in the upper memory context */
     result = palloc(data->nquantiles * sizeof(Numeric));
     
     qsort(data->elements, data->next, sizeof(Numeric), &numeric_comparator);
