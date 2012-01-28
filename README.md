@@ -11,7 +11,7 @@ Computes arbitrary quantile of the values - the quantile has to be
 between 0 and 1. For example this should return 500 just like the
 previous example
 
-   SELECT quantile(i, 0.5) FROM generate_series(1,1000) s(i);
+    SELECT quantile(i, 0.5) FROM generate_series(1,1000) s(i);
 
 but you can choose arbitrary quantile.
 
@@ -25,13 +25,13 @@ returns an array of values.
 
 So if you need all three quartiles, you may do this
 
-   SELECT quantile(i, ARRAY[0.25, 0.5, 0.75])
+    SELECT quantile(i, ARRAY[0.25, 0.5, 0.75])
      FROM generate_series(1,1000) s(i);
 
 and it should return ARRAY[250, 500, 750]. Compared to calling
 the simple quantile function like this
 
-   SELECT quantile(i, 0.25), quantile(i, 0.5), quantile(i, 0.75)
+    SELECT quantile(i, 0.25), quantile(i, 0.5), quantile(i, 0.75)
      FROM generate_series(1,1000) s(i);
 
 the advantage is that the values are collected just once (into
@@ -48,13 +48,13 @@ Installation
 Installing this is very simple - if you're on 9.1 you can install
 it like any other extension, i.e.
 
-  $ make install
-  $ psql dbname -c "CREATE EXTENSION quantile"
+    $ make install
+    $ psql dbname -c "CREATE EXTENSION quantile"
 
 and if you're on an older version, you have to run the SQL script
 manually
 
-  $ psql dbname < `pg_config --sharedir`/contrib/quantile--1.0.sql
+    $ psql dbname < `pg_config --sharedir`/contrib/quantile--1.0.sql
 
 That's all.
 
