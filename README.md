@@ -61,5 +61,6 @@ That's all.
 
 License
 -------
-This software is distributed under the terms of GPL v3 license. See
-LICENSE or http://www.gnu.org/copyleft/gpl.html for more details.
+This software is distributed under the terms of BSD 2-clause license.
+See LICENSE or http://www.opensource.org/licenses/bsd-license.php for
+more details.
