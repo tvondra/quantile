@@ -33,10 +33,13 @@
 #include "utils/numeric.h"
 #include "utils/builtins.h"
 #include "catalog/pg_type.h"
+#include "nodes/execnodes.h"
 
 #ifdef PG_MODULE_MAGIC
 PG_MODULE_MAGIC;
 #endif
+
+#if (PG_VERSION_NUM >= 90000)
 
 #define GET_AGG_CONTEXT(fname, fcinfo, aggcontext)  \
     if (! AggCheckCallContext(fcinfo, &aggcontext)) {   \
@@ -47,6 +50,28 @@ PG_MODULE_MAGIC;
     if (! AggCheckCallContext(fcinfo, NULL)) {   \
         elog(ERROR, "%s called in non-aggregate context", fname);  \
     }
+    
+#else
+
+#define GET_AGG_CONTEXT(fname, fcinfo, aggcontext)  \
+    if (fcinfo->context && IsA(fcinfo->context, AggState)) {  \
+        aggcontext = ((AggState *) fcinfo->context)->aggcontext;  \
+    } else if (fcinfo->context && IsA(fcinfo->context, WindowAggState)) {  \
+        aggcontext = ((WindowAggState *) fcinfo->context)->wincontext;  \
+    } else {  \
+        elog(ERROR, "%s called in non-aggregate context", fname);  \
+        aggcontext = NULL;  \
+    }
+
+#define CHECK_AGG_CONTEXT(fname, fcinfo)  \
+    if (!(fcinfo->context &&  \
+        (IsA(fcinfo->context, AggState) ||  \
+        IsA(fcinfo->context, WindowAggState))))  \
+    {  \
+        elog(ERROR, "%s called in non-aggregate context", fname);  \
+    }
+    
+#endif
 
 #define SLICE_SIZE 1024
 
