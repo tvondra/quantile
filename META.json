@@ -4,7 +4,7 @@
    "description": "An extension written in C that allows you to evaluate various quantiles (with float and integer types) efficiently. It collects all the data in memory and allows you to compute multiple quantiles at the same time.",
    "version": "1.1.0",
    "maintainer": "Tomas Vondra <tv@fuzzy.cz>",
-   "license": "gpl_3",
+   "license": "bsd",
    "prereqs": {
       "runtime": {
          "requires": {
