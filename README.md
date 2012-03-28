@@ -54,7 +54,7 @@ it like any other extension, i.e.
 and if you're on an older version, you have to run the SQL script
 manually
 
-    $ psql dbname < `pg_config --sharedir`/contrib/quantile--1.0.sql
+    $ psql dbname < `pg_config --sharedir`/contrib/quantile--1.1.sql
 
 That's all.
 
