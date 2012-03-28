@@ -35,7 +35,7 @@ PG_MODULE_MAGIC;
         elog(ERROR, "%s called in non-aggregate context", fname);  \
     }
     
-#elseif (PG_VERSION_NUM >= 80400)
+#elif (PG_VERSION_NUM >= 80400)
 
 #define GET_AGG_CONTEXT(fname, fcinfo, aggcontext)  \
     if (fcinfo->context && IsA(fcinfo->context, AggState)) {  \
@@ -656,7 +656,6 @@ quantile_double(PG_FUNCTION_ARGS)
 {
     
     int     idx = 0;
-    double *result;
     
     struct_double * data;
     
@@ -667,8 +666,6 @@ quantile_double(PG_FUNCTION_ARGS)
     }
     
     data = (struct_double*)PG_GETARG_POINTER(0);
-    
-    result = palloc(data->nquantiles * sizeof(double));
     
     qsort(data->elements, data->next, sizeof(double), &double_comparator);
 
