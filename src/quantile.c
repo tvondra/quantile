@@ -668,8 +668,8 @@ quantile_double(PG_FUNCTION_ARGS)
     data = (struct_double*)PG_GETARG_POINTER(0);
     
     qsort(data->elements, data->next, sizeof(double), &double_comparator);
-
-    if ((data->quantiles[0] > 0) && (data->quantiles[0] < 1)) {
+    
+    if (data->quantiles[0] > 0) {
         idx = (int)ceil(data->next * data->quantiles[0]) - 1;
     } else {
         idx = 0;
