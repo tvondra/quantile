@@ -12,6 +12,7 @@
 #include <limits.h>
 
 #include "postgres.h"
+#include "utils/datum.h"
 #include "utils/array.h"
 #include "utils/lsyscache.h"
 #include "utils/numeric.h"
@@ -413,7 +414,8 @@ quantile_append_numeric(PG_FUNCTION_ARGS)
             data->nelements = data->nelements + SLICE_SIZE;
         }
         
-        data->elements[data->next++] = element;
+        /* the value has to be copied (it's reused) */
+        data->elements[data->next++] = DatumGetNumeric(datumCopy(NumericGetDatum(element), false, -1));
         
     }
     
@@ -459,7 +461,7 @@ quantile_append_numeric_array(PG_FUNCTION_ARGS)
             data->nelements = data->nelements + SLICE_SIZE;
         }
         
-        data->elements[data->next++] = element;
+        data->elements[data->next++] = DatumGetNumeric(datumCopy(NumericGetDatum(element), false, -1));
         
     }
     
