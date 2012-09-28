@@ -45,14 +45,19 @@ basic numeric types, i.e. double, int (32-bit) and bigint (64-bit).
 
 Installation
 ------------
-Installing this is very simple - if you're on 9.1 you can install
-it like any other extension, i.e.
+Installing this is very simple, especially if you're using pgxn client.
+All you need to do is this:
+
+    $ pgxn install quantile
+    $ pgxn load -d mydb quantile
+
+and you're done. You may also install the extension manually:
 
     $ make install
     $ psql dbname -c "CREATE EXTENSION quantile"
 
-and if you're on an older version, you have to run the SQL script
-manually
+And if you're on an older version (pre-9.1), you have to run the SQL
+script manually
 
     $ psql dbname < `pg_config --sharedir`/contrib/quantile--1.1.sql
 
