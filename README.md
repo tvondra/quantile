@@ -2,18 +2,23 @@ Quantile aggregates
 ===================
 This extension provides three simple aggregate functions to compute
 quantiles (http://en.wikipedia.org/wiki/Quantile). There are two
-forms of aggregate functions available.
+forms of aggregate functions available - the first one returns
+a single quantile, the second one returns an arbitrary number of
+quantiles (as an array).
 
 
 1) quantile(p_value numeric, p_quantile float)
 ----------------------------------------------
-Computes arbitrary quantile of the values - the quantile has to be
-between 0 and 1. For example this should return 500 just like the
-previous example
+Computes arbitrary quantile of the values - the p_quantile has to be
+between 0 and 1. For example this should return 500 because 500 is the
+middle value of a sequence 1 .. 1000.
 
     SELECT quantile(i, 0.5) FROM generate_series(1,1000) s(i);
 
-but you can choose arbitrary quantile.
+but you can choose arbitrary quantile (for example 0.95).
+
+This function is overloaded for the four basic numeric types, i.e.
+int, bigint, double precision and numeric.
 
 
 2) quantile(p_value numeric, p_quantiles float[])
@@ -36,11 +41,12 @@ the simple quantile function like this
 
 the advantage is that the values are collected just once (into
 a single array), not for each expression separately. If you're
-working with large data sets, this may save a lot of time and
-memory (so it's a significant advantage).
+working with large data sets, this may save a significant amount
+of time and memory (if may even be the factor that allows the query
+to finish and not being killed by OOM killer or something).
 
-Just as in the first case, thre are three functions handling other
-basic numeric types, i.e. double, int (32-bit) and bigint (64-bit).
+Just as in the first case, there are four functions handling other
+basic numeric types, i.e. double, int, bigint and numeric.
 
 
 Installation
