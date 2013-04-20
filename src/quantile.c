@@ -19,6 +19,7 @@
 #include "utils/builtins.h"
 #include "catalog/pg_type.h"
 #include "nodes/execnodes.h"
+#include "access/tupmacs.h"
 
 #ifdef PG_MODULE_MAGIC
 PG_MODULE_MAGIC;
