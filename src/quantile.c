@@ -157,7 +157,7 @@ PG_MODULE_MAGIC;
     
 #endif
 
-#define SLICE_SIZE 1024
+#define SLICE_SIZE 5
 
 /* Structures used to keep the data - the 'elements' array is extended
  * on the fly if needed. */
