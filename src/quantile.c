@@ -299,6 +299,11 @@ quantile_append_double(PG_FUNCTION_ARGS)
     GET_AGG_CONTEXT("quantile_append_double", fcinfo, aggcontext);
 
     oldcontext = MemoryContextSwitchTo(aggcontext);
+    
+    /* OK, we do want to skip NULL values altogether */
+    if (PG_ARGISNULL(1)) {
+        PG_RETURN_NULL();
+    }
         
     if (PG_ARGISNULL(0)) {
         data = (struct_double*)palloc(sizeof(struct_double));
@@ -313,19 +318,13 @@ quantile_append_double(PG_FUNCTION_ARGS)
         data = (struct_double*)PG_GETARG_POINTER(0);
     }
     
-    /* ignore NULL values */
-    if (! PG_ARGISNULL(1)) {
-    
-        double element = PG_GETARG_FLOAT8(1);
-        
-        if (data->next > data->nelements-1) {
-            data->elements = (double*)repalloc(data->elements, sizeof(double)*(data->nelements + SLICE_SIZE));
-            data->nelements = data->nelements + SLICE_SIZE;
-        }
-        
-        data->elements[data->next++] = element;
-        
+    /* we can be sure the value is not null (see the check above) */
+    if (data->next > data->nelements-1) {
+        data->elements = (double*)repalloc(data->elements, sizeof(double)*(data->nelements + SLICE_SIZE));
+        data->nelements = data->nelements + SLICE_SIZE;
     }
+    
+    data->elements[data->next++] = PG_GETARG_FLOAT8(1);
     
     MemoryContextSwitchTo(oldcontext);
     
@@ -345,6 +344,11 @@ quantile_append_double_array(PG_FUNCTION_ARGS)
     GET_AGG_CONTEXT("quantile_append_double_array", fcinfo, aggcontext);
 
     oldcontext = MemoryContextSwitchTo(aggcontext);
+    
+    /* OK, we do want to skip NULL values altogether */
+    if (PG_ARGISNULL(1)) {
+        PG_RETURN_NULL();
+    }
         
     if (PG_ARGISNULL(0)) {
         data = (struct_double*)palloc(sizeof(struct_double));
@@ -359,19 +363,13 @@ quantile_append_double_array(PG_FUNCTION_ARGS)
         data = (struct_double*)PG_GETARG_POINTER(0);
     }
     
-    /* ignore NULL values */
-    if (! PG_ARGISNULL(1)) {
-    
-        double element = PG_GETARG_FLOAT8(1);
-        
-        if (data->next > data->nelements-1) {
-            data->elements = (double*)repalloc(data->elements, sizeof(double)*(data->nelements + SLICE_SIZE));
-            data->nelements = data->nelements + SLICE_SIZE;
-        }
-        
-        data->elements[data->next++] = element;
-        
+    /* we can be sure the value is not null (see the check above) */
+    if (data->next > data->nelements-1) {
+        data->elements = (double*)repalloc(data->elements, sizeof(double)*(data->nelements + SLICE_SIZE));
+        data->nelements = data->nelements + SLICE_SIZE;
     }
+    
+    data->elements[data->next++] = PG_GETARG_FLOAT8(1);
     
     MemoryContextSwitchTo(oldcontext);
     
@@ -391,6 +389,11 @@ quantile_append_numeric(PG_FUNCTION_ARGS)
     GET_AGG_CONTEXT("quantile_append_numeric", fcinfo, aggcontext);
     
     oldcontext = MemoryContextSwitchTo(aggcontext);
+    
+    /* OK, we do want to skip NULL values altogether */
+    if (PG_ARGISNULL(1)) {
+        PG_RETURN_NULL();
+    }
         
     if (PG_ARGISNULL(0)) {
         data = (struct_numeric*)palloc(sizeof(struct_numeric));
@@ -405,20 +408,14 @@ quantile_append_numeric(PG_FUNCTION_ARGS)
         data = (struct_numeric*)PG_GETARG_POINTER(0);
     }
     
-    /* ignore NULL values */
-    if (! PG_ARGISNULL(1)) {
-    
-        Numeric element = PG_GETARG_NUMERIC(1);
-        
-        if (data->next > data->nelements-1) {
-            data->elements = (Numeric*)repalloc(data->elements, sizeof(Numeric)*(data->nelements + SLICE_SIZE));
-            data->nelements = data->nelements + SLICE_SIZE;
-        }
-        
-        /* the value has to be copied (it's reused) */
-        data->elements[data->next++] = DatumGetNumeric(datumCopy(NumericGetDatum(element), false, -1));
-        
+    /* we can be sure the value is not null (see the check above) */
+    if (data->next > data->nelements-1) {
+        data->elements = (Numeric*)repalloc(data->elements, sizeof(Numeric)*(data->nelements + SLICE_SIZE));
+        data->nelements = data->nelements + SLICE_SIZE;
     }
+    
+    /* the value has to be copied (it's reused) */
+    data->elements[data->next++] = DatumGetNumeric(datumCopy(NumericGetDatum(PG_GETARG_NUMERIC(1)), false, -1));
     
     MemoryContextSwitchTo(oldcontext);
     
@@ -438,6 +435,11 @@ quantile_append_numeric_array(PG_FUNCTION_ARGS)
     GET_AGG_CONTEXT("quantile_append_numeric_array", fcinfo, aggcontext);
 
     oldcontext = MemoryContextSwitchTo(aggcontext);
+    
+    /* OK, we do want to skip NULL values altogether */
+    if (PG_ARGISNULL(1)) {
+        PG_RETURN_NULL();
+    }
         
     if (PG_ARGISNULL(0)) {
         data = (struct_numeric*)palloc(sizeof(struct_numeric));
@@ -452,19 +454,13 @@ quantile_append_numeric_array(PG_FUNCTION_ARGS)
         data = (struct_numeric*)PG_GETARG_POINTER(0);
     }
     
-    /* ignore NULL values */
-    if (! PG_ARGISNULL(1)) {
-    
-        Numeric element = PG_GETARG_NUMERIC(1);
-        
-        if (data->next > data->nelements-1) {
-            data->elements = (Numeric*)repalloc(data->elements, sizeof(Numeric)*(data->nelements + SLICE_SIZE));
-            data->nelements = data->nelements + SLICE_SIZE;
-        }
-        
-        data->elements[data->next++] = DatumGetNumeric(datumCopy(NumericGetDatum(element), false, -1));
-        
+    /* we can be sure the value is not null (see the check above) */
+    if (data->next > data->nelements-1) {
+        data->elements = (Numeric*)repalloc(data->elements, sizeof(Numeric)*(data->nelements + SLICE_SIZE));
+        data->nelements = data->nelements + SLICE_SIZE;
     }
+    
+    data->elements[data->next++] = DatumGetNumeric(datumCopy(NumericGetDatum(PG_GETARG_NUMERIC(1)), false, -1));
     
     MemoryContextSwitchTo(oldcontext);
     
@@ -484,6 +480,11 @@ quantile_append_int32(PG_FUNCTION_ARGS)
     GET_AGG_CONTEXT("quantile_append_int32", fcinfo, aggcontext);
 
     oldcontext = MemoryContextSwitchTo(aggcontext);
+    
+    /* OK, we do want to skip NULL values altogether */
+    if (PG_ARGISNULL(1)) {
+        PG_RETURN_NULL();
+    }
         
     if (PG_ARGISNULL(0)) {
         data = (struct_int32*)palloc(sizeof(struct_int32));
@@ -497,19 +498,13 @@ quantile_append_int32(PG_FUNCTION_ARGS)
         data = (struct_int32*)PG_GETARG_POINTER(0);
     }
     
-    /* ignore NULL values */
-    if (! PG_ARGISNULL(1)) {
-    
-        int32 element = PG_GETARG_INT32(1);
-        
-        if (data->next > data->nelements-1) {
-            data->elements = (int32*)repalloc(data->elements, sizeof(int32)*(data->nelements + SLICE_SIZE));
-            data->nelements = data->nelements + SLICE_SIZE;
-        }
-        
-        data->elements[data->next++] = element;
-        
+    /* we can be sure the value is not null (see the check above) */
+    if (data->next > data->nelements-1) {
+        data->elements = (int32*)repalloc(data->elements, sizeof(int32)*(data->nelements + SLICE_SIZE));
+        data->nelements = data->nelements + SLICE_SIZE;
     }
+    
+    data->elements[data->next++] = PG_GETARG_INT32(1);
     
     MemoryContextSwitchTo(oldcontext);
     
@@ -529,6 +524,11 @@ quantile_append_int32_array(PG_FUNCTION_ARGS)
     GET_AGG_CONTEXT("quantile_append_int32_array", fcinfo, aggcontext);
     
     oldcontext = MemoryContextSwitchTo(aggcontext);
+    
+    /* OK, we do want to skip NULL values altogether */
+    if (PG_ARGISNULL(1)) {
+        PG_RETURN_NULL();
+    }
         
     if (PG_ARGISNULL(0)) {
         data = (struct_int32*)palloc(sizeof(struct_int32));
@@ -543,19 +543,13 @@ quantile_append_int32_array(PG_FUNCTION_ARGS)
         data = (struct_int32*)PG_GETARG_POINTER(0);
     }
     
-    /* ignore NULL values */
-    if (! PG_ARGISNULL(1)) {
-
-        int32 element = PG_GETARG_INT32(1);
-        
-        if (data->next > data->nelements-1) {
-            data->elements = (int32*)repalloc(data->elements, sizeof(int32)*(data->nelements + SLICE_SIZE));
-            data->nelements = data->nelements + SLICE_SIZE;
-        }
-        
-        data->elements[data->next++] = element;
-        
+    /* we can be sure the value is not null (see the check above) */
+    if (data->next > data->nelements-1) {
+        data->elements = (int32*)repalloc(data->elements, sizeof(int32)*(data->nelements + SLICE_SIZE));
+        data->nelements = data->nelements + SLICE_SIZE;
     }
+    
+    data->elements[data->next++] = PG_GETARG_INT32(1);
     
     MemoryContextSwitchTo(oldcontext);
     
@@ -575,6 +569,11 @@ quantile_append_int64(PG_FUNCTION_ARGS)
     GET_AGG_CONTEXT("quantile_append_int64", fcinfo, aggcontext);
 
     oldcontext = MemoryContextSwitchTo(aggcontext);
+    
+    /* OK, we do want to skip NULL values altogether */
+    if (PG_ARGISNULL(1)) {
+        PG_RETURN_NULL();
+    }
         
     if (PG_ARGISNULL(0)) {
         data = (struct_int64*)palloc(sizeof(struct_int64));
@@ -588,19 +587,13 @@ quantile_append_int64(PG_FUNCTION_ARGS)
         data = (struct_int64*)PG_GETARG_POINTER(0);
     }
     
-    /* ignore NULL values */
-    if (! PG_ARGISNULL(1)) {
-    
-        int64 element = PG_GETARG_INT64(1);
-        
-        if (data->next > data->nelements-1) {
-            data->elements = (int64*)repalloc(data->elements, sizeof(int64)*(data->nelements + SLICE_SIZE));
-            data->nelements = data->nelements + SLICE_SIZE;
-        }
-        
-        data->elements[data->next++] = element;
-        
+    /* we can be sure the value is not null (see the check above) */
+    if (data->next > data->nelements-1) {
+        data->elements = (int64*)repalloc(data->elements, sizeof(int64)*(data->nelements + SLICE_SIZE));
+        data->nelements = data->nelements + SLICE_SIZE;
     }
+    
+    data->elements[data->next++] = PG_GETARG_INT64(1);
     
     MemoryContextSwitchTo(oldcontext);
     
@@ -620,6 +613,11 @@ quantile_append_int64_array(PG_FUNCTION_ARGS)
     GET_AGG_CONTEXT("quantile_append_int64_array", fcinfo, aggcontext);
 
     oldcontext = MemoryContextSwitchTo(aggcontext);
+    
+    /* OK, we do want to skip NULL values altogether */
+    if (PG_ARGISNULL(1)) {
+        PG_RETURN_NULL();
+    }
         
     if (PG_ARGISNULL(0)) {
         data = (struct_int64*)palloc(sizeof(struct_int64));
@@ -634,19 +632,13 @@ quantile_append_int64_array(PG_FUNCTION_ARGS)
         data = (struct_int64*)PG_GETARG_POINTER(0);
     }
     
-    /* ignore NULL values */
-    if (! PG_ARGISNULL(1)) {
-    
-        int64 element = PG_GETARG_INT64(1);
-        
-        if (data->next > data->nelements-1) {
-            data->elements = (int64*)repalloc(data->elements, sizeof(int64)*(data->nelements + SLICE_SIZE));
-            data->nelements = data->nelements + SLICE_SIZE;
-        }
-        
-        data->elements[data->next++] = element;
-        
+    /* we can be sure the value is not null (see the check above) */
+    if (data->next > data->nelements-1) {
+        data->elements = (int64*)repalloc(data->elements, sizeof(int64)*(data->nelements + SLICE_SIZE));
+        data->nelements = data->nelements + SLICE_SIZE;
     }
+    
+    data->elements[data->next++] = PG_GETARG_INT64(1);
     
     MemoryContextSwitchTo(oldcontext);
     
