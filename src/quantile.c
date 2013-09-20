@@ -295,10 +295,6 @@ quantile_append_double(PG_FUNCTION_ARGS)
     
     MemoryContext oldcontext;
     MemoryContext aggcontext;
-
-    GET_AGG_CONTEXT("quantile_append_double", fcinfo, aggcontext);
-
-    oldcontext = MemoryContextSwitchTo(aggcontext);
     
     /* OK, we do want to skip NULL values altogether */
     if (PG_ARGISNULL(1)) {
@@ -308,6 +304,10 @@ quantile_append_double(PG_FUNCTION_ARGS)
             /* if there already is a state accumulated, don't forget it */
             PG_RETURN_DATUM(PG_GETARG_DATUM(0));
     }
+
+    GET_AGG_CONTEXT("quantile_append_double", fcinfo, aggcontext);
+
+    oldcontext = MemoryContextSwitchTo(aggcontext);
         
     if (PG_ARGISNULL(0)) {
         data = (struct_double*)palloc(sizeof(struct_double));
@@ -344,10 +344,6 @@ quantile_append_double_array(PG_FUNCTION_ARGS)
     
     MemoryContext oldcontext;
     MemoryContext aggcontext;
-
-    GET_AGG_CONTEXT("quantile_append_double_array", fcinfo, aggcontext);
-
-    oldcontext = MemoryContextSwitchTo(aggcontext);
     
     /* OK, we do want to skip NULL values altogether */
     if (PG_ARGISNULL(1)) {
@@ -357,6 +353,10 @@ quantile_append_double_array(PG_FUNCTION_ARGS)
             /* if there already is a state accumulated, don't forget it */
             PG_RETURN_DATUM(PG_GETARG_DATUM(0));
     }
+
+    GET_AGG_CONTEXT("quantile_append_double_array", fcinfo, aggcontext);
+
+    oldcontext = MemoryContextSwitchTo(aggcontext);
         
     if (PG_ARGISNULL(0)) {
         data = (struct_double*)palloc(sizeof(struct_double));
@@ -393,10 +393,6 @@ quantile_append_numeric(PG_FUNCTION_ARGS)
     
     MemoryContext oldcontext;
     MemoryContext aggcontext;
-
-    GET_AGG_CONTEXT("quantile_append_numeric", fcinfo, aggcontext);
-    
-    oldcontext = MemoryContextSwitchTo(aggcontext);
     
     /* OK, we do want to skip NULL values altogether */
     if (PG_ARGISNULL(1)) {
@@ -406,6 +402,10 @@ quantile_append_numeric(PG_FUNCTION_ARGS)
             /* if there already is a state accumulated, don't forget it */
             PG_RETURN_DATUM(PG_GETARG_DATUM(0));
     }
+
+    GET_AGG_CONTEXT("quantile_append_numeric", fcinfo, aggcontext);
+    
+    oldcontext = MemoryContextSwitchTo(aggcontext);
         
     if (PG_ARGISNULL(0)) {
         data = (struct_numeric*)palloc(sizeof(struct_numeric));
@@ -443,10 +443,6 @@ quantile_append_numeric_array(PG_FUNCTION_ARGS)
     
     MemoryContext oldcontext;
     MemoryContext aggcontext;
-
-    GET_AGG_CONTEXT("quantile_append_numeric_array", fcinfo, aggcontext);
-
-    oldcontext = MemoryContextSwitchTo(aggcontext);
     
     /* OK, we do want to skip NULL values altogether */
     if (PG_ARGISNULL(1)) {
@@ -456,6 +452,10 @@ quantile_append_numeric_array(PG_FUNCTION_ARGS)
             /* if there already is a state accumulated, don't forget it */
             PG_RETURN_DATUM(PG_GETARG_DATUM(0));
     }
+
+    GET_AGG_CONTEXT("quantile_append_numeric_array", fcinfo, aggcontext);
+
+    oldcontext = MemoryContextSwitchTo(aggcontext);
         
     if (PG_ARGISNULL(0)) {
         data = (struct_numeric*)palloc(sizeof(struct_numeric));
@@ -492,10 +492,6 @@ quantile_append_int32(PG_FUNCTION_ARGS)
     
     MemoryContext oldcontext;
     MemoryContext aggcontext;
-
-    GET_AGG_CONTEXT("quantile_append_int32", fcinfo, aggcontext);
-
-    oldcontext = MemoryContextSwitchTo(aggcontext);
     
     /* OK, we do want to skip NULL values altogether */
     if (PG_ARGISNULL(1)) {
@@ -505,6 +501,10 @@ quantile_append_int32(PG_FUNCTION_ARGS)
             /* if there already is a state accumulated, don't forget it */
             PG_RETURN_DATUM(PG_GETARG_DATUM(0));
     }
+
+    GET_AGG_CONTEXT("quantile_append_int32", fcinfo, aggcontext);
+
+    oldcontext = MemoryContextSwitchTo(aggcontext);
         
     if (PG_ARGISNULL(0)) {
         data = (struct_int32*)palloc(sizeof(struct_int32));
@@ -540,10 +540,6 @@ quantile_append_int32_array(PG_FUNCTION_ARGS)
     
     MemoryContext oldcontext;
     MemoryContext aggcontext;
-
-    GET_AGG_CONTEXT("quantile_append_int32_array", fcinfo, aggcontext);
-    
-    oldcontext = MemoryContextSwitchTo(aggcontext);
     
     /* OK, we do want to skip NULL values altogether */
     if (PG_ARGISNULL(1)) {
@@ -553,6 +549,10 @@ quantile_append_int32_array(PG_FUNCTION_ARGS)
             /* if there already is a state accumulated, don't forget it */
             PG_RETURN_DATUM(PG_GETARG_DATUM(0));
     }
+
+    GET_AGG_CONTEXT("quantile_append_int32_array", fcinfo, aggcontext);
+    
+    oldcontext = MemoryContextSwitchTo(aggcontext);
         
     if (PG_ARGISNULL(0)) {
         data = (struct_int32*)palloc(sizeof(struct_int32));
@@ -589,10 +589,6 @@ quantile_append_int64(PG_FUNCTION_ARGS)
     
     MemoryContext oldcontext;
     MemoryContext aggcontext;
-
-    GET_AGG_CONTEXT("quantile_append_int64", fcinfo, aggcontext);
-
-    oldcontext = MemoryContextSwitchTo(aggcontext);
     
     /* OK, we do want to skip NULL values altogether */
     if (PG_ARGISNULL(1)) {
@@ -602,6 +598,10 @@ quantile_append_int64(PG_FUNCTION_ARGS)
             /* if there already is a state accumulated, don't forget it */
             PG_RETURN_DATUM(PG_GETARG_DATUM(0));
     }
+
+    GET_AGG_CONTEXT("quantile_append_int64", fcinfo, aggcontext);
+
+    oldcontext = MemoryContextSwitchTo(aggcontext);
         
     if (PG_ARGISNULL(0)) {
         data = (struct_int64*)palloc(sizeof(struct_int64));
@@ -637,10 +637,6 @@ quantile_append_int64_array(PG_FUNCTION_ARGS)
     
     MemoryContext oldcontext;
     MemoryContext aggcontext;
-
-    GET_AGG_CONTEXT("quantile_append_int64_array", fcinfo, aggcontext);
-
-    oldcontext = MemoryContextSwitchTo(aggcontext);
     
     /* OK, we do want to skip NULL values altogether */
     if (PG_ARGISNULL(1)) {
@@ -650,6 +646,10 @@ quantile_append_int64_array(PG_FUNCTION_ARGS)
             /* if there already is a state accumulated, don't forget it */
             PG_RETURN_DATUM(PG_GETARG_DATUM(0));
     }
+
+    GET_AGG_CONTEXT("quantile_append_int64_array", fcinfo, aggcontext);
+
+    oldcontext = MemoryContextSwitchTo(aggcontext);
         
     if (PG_ARGISNULL(0)) {
         data = (struct_int64*)palloc(sizeof(struct_int64));
