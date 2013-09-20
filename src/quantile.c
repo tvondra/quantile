@@ -306,7 +306,7 @@ quantile_append_double(PG_FUNCTION_ARGS)
             PG_RETURN_NULL();
         else
             /* if there already is a state accumulated, don't forget it */
-            PG_RETURN_DATUM(PG_GETARG_DATUM(0))
+            PG_RETURN_DATUM(PG_GETARG_DATUM(0));
     }
         
     if (PG_ARGISNULL(0)) {
@@ -355,7 +355,7 @@ quantile_append_double_array(PG_FUNCTION_ARGS)
             PG_RETURN_NULL();
         else
             /* if there already is a state accumulated, don't forget it */
-            PG_RETURN_DATUM(PG_GETARG_DATUM(0))
+            PG_RETURN_DATUM(PG_GETARG_DATUM(0));
     }
         
     if (PG_ARGISNULL(0)) {
@@ -404,7 +404,7 @@ quantile_append_numeric(PG_FUNCTION_ARGS)
             PG_RETURN_NULL();
         else
             /* if there already is a state accumulated, don't forget it */
-            PG_RETURN_DATUM(PG_GETARG_DATUM(0))
+            PG_RETURN_DATUM(PG_GETARG_DATUM(0));
     }
         
     if (PG_ARGISNULL(0)) {
@@ -454,7 +454,7 @@ quantile_append_numeric_array(PG_FUNCTION_ARGS)
             PG_RETURN_NULL();
         else
             /* if there already is a state accumulated, don't forget it */
-            PG_RETURN_DATUM(PG_GETARG_DATUM(0))
+            PG_RETURN_DATUM(PG_GETARG_DATUM(0));
     }
         
     if (PG_ARGISNULL(0)) {
@@ -503,7 +503,7 @@ quantile_append_int32(PG_FUNCTION_ARGS)
             PG_RETURN_NULL();
         else
             /* if there already is a state accumulated, don't forget it */
-            PG_RETURN_DATUM(PG_GETARG_DATUM(0))
+            PG_RETURN_DATUM(PG_GETARG_DATUM(0));
     }
         
     if (PG_ARGISNULL(0)) {
@@ -551,7 +551,7 @@ quantile_append_int32_array(PG_FUNCTION_ARGS)
             PG_RETURN_NULL();
         else
             /* if there already is a state accumulated, don't forget it */
-            PG_RETURN_DATUM(PG_GETARG_DATUM(0))
+            PG_RETURN_DATUM(PG_GETARG_DATUM(0));
     }
         
     if (PG_ARGISNULL(0)) {
@@ -600,7 +600,7 @@ quantile_append_int64(PG_FUNCTION_ARGS)
             PG_RETURN_NULL();
         else
             /* if there already is a state accumulated, don't forget it */
-            PG_RETURN_DATUM(PG_GETARG_DATUM(0))
+            PG_RETURN_DATUM(PG_GETARG_DATUM(0));
     }
         
     if (PG_ARGISNULL(0)) {
@@ -648,7 +648,7 @@ quantile_append_int64_array(PG_FUNCTION_ARGS)
             PG_RETURN_NULL();
         else
             /* if there already is a state accumulated, don't forget it */
-            PG_RETURN_DATUM(PG_GETARG_DATUM(0))
+            PG_RETURN_DATUM(PG_GETARG_DATUM(0));
     }
         
     if (PG_ARGISNULL(0)) {
