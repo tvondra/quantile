@@ -229,6 +229,9 @@ int64_to_array(FunctionCallInfo fcinfo, int64 * d, int len);
 static Datum
 numeric_to_array(FunctionCallInfo fcinfo, Numeric * d, int len);
 
+static void
+check_quantiles(int nquantiles, double * quantiles);
+
 /* prototypes */
 PG_FUNCTION_INFO_V1(quantile_append_double_array);
 PG_FUNCTION_INFO_V1(quantile_append_double);
@@ -318,6 +321,9 @@ quantile_append_double(PG_FUNCTION_ARGS)
         data->quantiles = (double*)palloc(sizeof(double));
         data->quantiles[0] = PG_GETARG_FLOAT8(2);
         data->nquantiles = 1;
+
+        check_quantiles(data->nquantiles, data->quantiles);
+
     } else {
         data = (struct_double*)PG_GETARG_POINTER(0);
     }
@@ -366,7 +372,9 @@ quantile_append_double_array(PG_FUNCTION_ARGS)
         
         /* read the array of quantiles */
         data->quantiles = array_to_double(fcinfo, PG_GETARG_ARRAYTYPE_P(2), &data->nquantiles);
-        
+
+        check_quantiles(data->nquantiles, data->quantiles);
+
     } else {
         data = (struct_double*)PG_GETARG_POINTER(0);
     }
@@ -416,6 +424,9 @@ quantile_append_numeric(PG_FUNCTION_ARGS)
         data->quantiles = (double*)palloc(sizeof(double));
         data->quantiles[0] = PG_GETARG_FLOAT8(2);
         data->nquantiles = 1;
+
+        check_quantiles(data->nquantiles, data->quantiles);
+
     } else {
         data = (struct_numeric*)PG_GETARG_POINTER(0);
     }
@@ -465,7 +476,9 @@ quantile_append_numeric_array(PG_FUNCTION_ARGS)
         
         /* read the array of quantiles */
         data->quantiles = array_to_double(fcinfo, PG_GETARG_ARRAYTYPE_P(2), &data->nquantiles);
-        
+
+        check_quantiles(data->nquantiles, data->quantiles);
+
     } else {
         data = (struct_numeric*)PG_GETARG_POINTER(0);
     }
@@ -514,6 +527,9 @@ quantile_append_int32(PG_FUNCTION_ARGS)
         data->nquantiles = 1;
         data->quantiles[0] = PG_GETARG_FLOAT8(2);
         data->next = 0;
+
+        check_quantiles(data->nquantiles, data->quantiles);
+
     } else {
         data = (struct_int32*)PG_GETARG_POINTER(0);
     }
@@ -562,6 +578,8 @@ quantile_append_int32_array(PG_FUNCTION_ARGS)
         
         /* read the array of quantiles */
         data->quantiles = array_to_double(fcinfo, PG_GETARG_ARRAYTYPE_P(2), &data->nquantiles);
+
+        check_quantiles(data->nquantiles, data->quantiles);
         
     } else {
         data = (struct_int32*)PG_GETARG_POINTER(0);
@@ -611,6 +629,9 @@ quantile_append_int64(PG_FUNCTION_ARGS)
         data->nquantiles = 1;
         data->quantiles[0] = PG_GETARG_FLOAT8(2);
         data->next = 0;
+
+        check_quantiles(data->nquantiles, data->quantiles);
+
     } else {
         data = (struct_int64*)PG_GETARG_POINTER(0);
     }
@@ -659,6 +680,8 @@ quantile_append_int64_array(PG_FUNCTION_ARGS)
         
         /* read the array of quantiles */
         data->quantiles = array_to_double(fcinfo, PG_GETARG_ARRAYTYPE_P(2), &data->nquantiles);
+
+        check_quantiles(data->nquantiles, data->quantiles);
         
     } else {
         data = (struct_int64*)PG_GETARG_POINTER(0);
@@ -1151,4 +1174,16 @@ numeric_to_array(FunctionCallInfo fcinfo, Numeric * d, int len) {
 
     PG_RETURN_ARRAYTYPE_P(makeArrayResult(astate,
                                           CurrentMemoryContext));
+}
+
+
+static void
+check_quantiles(int nquantiles, double * quantiles) {
+
+    int i = 0;
+    for (i = 0; i < nquantiles; i++) {
+        if (quantiles[i] < 0 || quantiles[i] > 1)
+            elog(ERROR, "invalid percentile value %f - needs to be in [0,1]", quantiles[i]);
+    }
+
 }
