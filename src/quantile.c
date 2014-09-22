@@ -725,7 +725,7 @@ quantile_double(PG_FUNCTION_ARGS)
 Datum
 quantile_double_array(PG_FUNCTION_ARGS)
 {
-    int i, idx = 0;
+    int i, idx;
     double * result;
 
     struct_double * data;
@@ -743,12 +743,9 @@ quantile_double_array(PG_FUNCTION_ARGS)
 
     for (i = 0; i < data->nquantiles; i++)
     {
+        idx = 0;
         if (data->quantiles[i] > 0)
             idx = (int)ceil(data->next * data->quantiles[i]) - 1;
-        else if (data->quantiles[i] <= 0)
-            idx = 0;
-        else if (data->quantiles[i] >= 1)
-            idx = data->next - 1;
 
         result[i] = data->elements[idx];
     }
@@ -780,7 +777,7 @@ quantile_int32(PG_FUNCTION_ARGS)
 Datum
 quantile_int32_array(PG_FUNCTION_ARGS)
 {
-    int i, idx = 0;
+    int i, idx;
     struct_int32 * data;
     int32 * result;
 
@@ -797,12 +794,9 @@ quantile_int32_array(PG_FUNCTION_ARGS)
 
     for (i = 0; i < data->nquantiles; i++)
     {
+        idx = 0;
         if (data->quantiles[i] > 0)
             idx = (int)ceil(data->next * data->quantiles[i]) - 1;
-        else if (data->quantiles[i] <= 0)
-            idx = 0;
-        else if (data->quantiles[i] >= 1)
-            idx = data->next - 1;
 
         result[i] = data->elements[idx];
     }
@@ -834,7 +828,7 @@ quantile_int64(PG_FUNCTION_ARGS)
 Datum
 quantile_int64_array(PG_FUNCTION_ARGS)
 {
-    int i, idx = 0;
+    int i, idx;
     struct_int64 * data;
     int64 * result;
 
@@ -851,12 +845,9 @@ quantile_int64_array(PG_FUNCTION_ARGS)
 
     for (i = 0; i < data->nquantiles; i++)
     {
+        idx = 0;
         if (data->quantiles[i] > 0)
             idx = (int)ceil(data->next * data->quantiles[i]) - 1;
-        else if (data->quantiles[i] <= 0)
-            idx = 0;
-        else if (data->quantiles[i] >= 1)
-            idx = data->next - 1;
 
         result[i] = data->elements[idx];
     }
@@ -888,7 +879,7 @@ quantile_numeric(PG_FUNCTION_ARGS)
 Datum
 quantile_numeric_array(PG_FUNCTION_ARGS)
 {
-    int i, idx = 0;
+    int i, idx;
     struct_numeric * data;
     Numeric * result;
 
@@ -905,12 +896,9 @@ quantile_numeric_array(PG_FUNCTION_ARGS)
 
     for (i = 0; i < data->nquantiles; i++)
     {
+        idx = 0;
         if (data->quantiles[i] > 0)
             idx = (int)ceil(data->next * data->quantiles[i]) - 1;
-        else if (data->quantiles[i] <= 0)
-            idx = 0;
-        else if (data->quantiles[i] >= 1)
-            idx = data->next - 1;
 
         result[i] = data->elements[idx];
     }
