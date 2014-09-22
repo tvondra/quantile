@@ -157,8 +157,6 @@ PG_MODULE_MAGIC;
     
 #endif
 
-#define SLICE_SIZE 5
-
 /* Structures used to keep the data - the 'elements' array is extended
  * on the fly if needed. */
 
@@ -314,8 +312,8 @@ quantile_append_double(PG_FUNCTION_ARGS)
         
     if (PG_ARGISNULL(0)) {
         data = (struct_double*)palloc(sizeof(struct_double));
-        data->elements  = (double*)palloc(SLICE_SIZE*sizeof(double));
-        data->nelements = SLICE_SIZE;
+        data->elements  = (double*)palloc(4*sizeof(double));    /* 4*8B = 32B */
+        data->nelements = 4;
         data->next = 0;
         
         data->quantiles = (double*)palloc(sizeof(double));
@@ -330,8 +328,8 @@ quantile_append_double(PG_FUNCTION_ARGS)
     
     /* we can be sure the value is not null (see the check above) */
     if (data->next > data->nelements-1) {
-        data->elements = (double*)repalloc(data->elements, sizeof(double)*(data->nelements + SLICE_SIZE));
-        data->nelements = data->nelements + SLICE_SIZE;
+        data->nelements *= 2;
+        data->elements = (double*)repalloc(data->elements, sizeof(double)*data->nelements);
     }
     
     data->elements[data->next++] = PG_GETARG_FLOAT8(1);
@@ -366,8 +364,8 @@ quantile_append_double_array(PG_FUNCTION_ARGS)
         
     if (PG_ARGISNULL(0)) {
         data = (struct_double*)palloc(sizeof(struct_double));
-        data->elements  = (double*)palloc(SLICE_SIZE*sizeof(double));
-        data->nelements = SLICE_SIZE;
+        data->elements  = (double*)palloc(4*sizeof(double));
+        data->nelements = 4;
         data->next = 0;
         
         /* read the array of quantiles */
@@ -381,8 +379,8 @@ quantile_append_double_array(PG_FUNCTION_ARGS)
     
     /* we can be sure the value is not null (see the check above) */
     if (data->next > data->nelements-1) {
-        data->elements = (double*)repalloc(data->elements, sizeof(double)*(data->nelements + SLICE_SIZE));
-        data->nelements = data->nelements + SLICE_SIZE;
+        data->nelements *= 2;
+        data->elements = (double*)repalloc(data->elements, sizeof(double)*data->nelements);
     }
     
     data->elements[data->next++] = PG_GETARG_FLOAT8(1);
@@ -417,8 +415,8 @@ quantile_append_numeric(PG_FUNCTION_ARGS)
         
     if (PG_ARGISNULL(0)) {
         data = (struct_numeric*)palloc(sizeof(struct_numeric));
-        data->elements  = (Numeric*)palloc(SLICE_SIZE*sizeof(Numeric));
-        data->nelements = SLICE_SIZE;
+        data->elements  = (Numeric*)palloc(4*sizeof(Numeric));
+        data->nelements = 4;
         data->next = 0;
         
         data->quantiles = (double*)palloc(sizeof(double));
@@ -433,8 +431,8 @@ quantile_append_numeric(PG_FUNCTION_ARGS)
     
     /* we can be sure the value is not null (see the check above) */
     if (data->next > data->nelements-1) {
-        data->elements = (Numeric*)repalloc(data->elements, sizeof(Numeric)*(data->nelements + SLICE_SIZE));
-        data->nelements = data->nelements + SLICE_SIZE;
+        data->nelements *= 2;
+        data->elements = (Numeric*)repalloc(data->elements, sizeof(Numeric)*data->nelements);
     }
     
     /* the value has to be copied (it's reused) */
@@ -470,8 +468,8 @@ quantile_append_numeric_array(PG_FUNCTION_ARGS)
         
     if (PG_ARGISNULL(0)) {
         data = (struct_numeric*)palloc(sizeof(struct_numeric));
-        data->elements  = (Numeric*)palloc(SLICE_SIZE*sizeof(Numeric));
-        data->nelements = SLICE_SIZE;
+        data->elements  = (Numeric*)palloc(4*sizeof(Numeric));
+        data->nelements = 4;
         data->next = 0;
         
         /* read the array of quantiles */
@@ -485,8 +483,8 @@ quantile_append_numeric_array(PG_FUNCTION_ARGS)
     
     /* we can be sure the value is not null (see the check above) */
     if (data->next > data->nelements-1) {
-        data->elements = (Numeric*)repalloc(data->elements, sizeof(Numeric)*(data->nelements + SLICE_SIZE));
-        data->nelements = data->nelements + SLICE_SIZE;
+        data->nelements *= 2;
+        data->elements = (Numeric*)repalloc(data->elements, sizeof(Numeric)*data->nelements);
     }
     
     data->elements[data->next++] = DatumGetNumeric(datumCopy(NumericGetDatum(PG_GETARG_NUMERIC(1)), false, -1));
@@ -522,8 +520,8 @@ quantile_append_int32(PG_FUNCTION_ARGS)
     if (PG_ARGISNULL(0)) {
         data = (struct_int32*)palloc(sizeof(struct_int32));
         data->quantiles = (double*)palloc(sizeof(double));
-        data->elements  = (int32*)palloc(SLICE_SIZE*sizeof(int32));
-        data->nelements = SLICE_SIZE;
+        data->elements  = (int32*)palloc(8*sizeof(int32));
+        data->nelements = 8;
         data->nquantiles = 1;
         data->quantiles[0] = PG_GETARG_FLOAT8(2);
         data->next = 0;
@@ -536,8 +534,8 @@ quantile_append_int32(PG_FUNCTION_ARGS)
     
     /* we can be sure the value is not null (see the check above) */
     if (data->next > data->nelements-1) {
-        data->elements = (int32*)repalloc(data->elements, sizeof(int32)*(data->nelements + SLICE_SIZE));
-        data->nelements = data->nelements + SLICE_SIZE;
+        data->nelements *= 2;
+        data->elements = (int32*)repalloc(data->elements, sizeof(int32)*data->nelements);
     }
     
     data->elements[data->next++] = PG_GETARG_INT32(1);
@@ -572,8 +570,8 @@ quantile_append_int32_array(PG_FUNCTION_ARGS)
         
     if (PG_ARGISNULL(0)) {
         data = (struct_int32*)palloc(sizeof(struct_int32));
-        data->elements  = (int32*)palloc(SLICE_SIZE*sizeof(int32));
-        data->nelements = SLICE_SIZE;
+        data->elements  = (int32*)palloc(4*sizeof(int32));
+        data->nelements = 4;
         data->next = 0;
         
         /* read the array of quantiles */
@@ -587,8 +585,8 @@ quantile_append_int32_array(PG_FUNCTION_ARGS)
     
     /* we can be sure the value is not null (see the check above) */
     if (data->next > data->nelements-1) {
-        data->elements = (int32*)repalloc(data->elements, sizeof(int32)*(data->nelements + SLICE_SIZE));
-        data->nelements = data->nelements + SLICE_SIZE;
+        data->nelements *= 2;
+        data->elements = (int32*)repalloc(data->elements, sizeof(int32)*data->nelements);
     }
     
     data->elements[data->next++] = PG_GETARG_INT32(1);
@@ -624,8 +622,8 @@ quantile_append_int64(PG_FUNCTION_ARGS)
     if (PG_ARGISNULL(0)) {
         data = (struct_int64*)palloc(sizeof(struct_int64));
         data->quantiles = (double*)palloc(sizeof(double));
-        data->elements  = (int64*)palloc(SLICE_SIZE*sizeof(int64));
-        data->nelements = SLICE_SIZE;
+        data->elements  = (int64*)palloc(4*sizeof(int64));
+        data->nelements = 4;
         data->nquantiles = 1;
         data->quantiles[0] = PG_GETARG_FLOAT8(2);
         data->next = 0;
@@ -638,8 +636,8 @@ quantile_append_int64(PG_FUNCTION_ARGS)
     
     /* we can be sure the value is not null (see the check above) */
     if (data->next > data->nelements-1) {
-        data->elements = (int64*)repalloc(data->elements, sizeof(int64)*(data->nelements + SLICE_SIZE));
-        data->nelements = data->nelements + SLICE_SIZE;
+        data->nelements *= 2;
+        data->elements = (int64*)repalloc(data->elements, sizeof(int64)*data->nelements);
     }
     
     data->elements[data->next++] = PG_GETARG_INT64(1);
@@ -674,8 +672,8 @@ quantile_append_int64_array(PG_FUNCTION_ARGS)
         
     if (PG_ARGISNULL(0)) {
         data = (struct_int64*)palloc(sizeof(struct_int64));
-        data->elements  = (int64*)palloc(SLICE_SIZE*sizeof(int64));
-        data->nelements = SLICE_SIZE;
+        data->elements  = (int64*)palloc(4*sizeof(int64));
+        data->nelements = 4;
         data->next = 0;
         
         /* read the array of quantiles */
@@ -689,8 +687,8 @@ quantile_append_int64_array(PG_FUNCTION_ARGS)
     
     /* we can be sure the value is not null (see the check above) */
     if (data->next > data->nelements-1) {
-        data->elements = (int64*)repalloc(data->elements, sizeof(int64)*(data->nelements + SLICE_SIZE));
-        data->nelements = data->nelements + SLICE_SIZE;
+        data->nelements *= 2;
+        data->elements = (int64*)repalloc(data->elements, sizeof(int64)*data->nelements);
     }
     
     data->elements[data->next++] = PG_GETARG_INT64(1);
