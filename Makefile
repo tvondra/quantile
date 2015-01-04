@@ -2,7 +2,7 @@ MODULE_big = quantile
 OBJS = src/quantile.o
 
 EXTENSION = quantile
-DATA = sql/quantile--1.1.3.sql
+DATA = sql/quantile--1.1.4.sql
 MODULES = quantile
 
 CFLAGS=`pg_config --includedir-server`

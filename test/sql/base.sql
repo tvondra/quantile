@@ -2,7 +2,7 @@
 
 -- disable the notices for the create script (shell types etc.)
 SET client_min_messages = 'WARNING';
-\i sql/quantile--1.1.3.sql
+\i sql/quantile--1.1.4.sql
 SET client_min_messages = 'NOTICE';
 
 \set ECHO all
