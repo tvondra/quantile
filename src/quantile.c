@@ -733,94 +733,94 @@ quantile_double_deserial(PG_FUNCTION_ARGS)
 Datum
 quantile_double_combine(PG_FUNCTION_ARGS)
 {
-	int i, j, k;
-	double *tmp;
-	struct_double *state1;
-	struct_double *state2;
-	MemoryContext agg_context;
-	MemoryContext old_context;
+    int i, j, k;
+    double *tmp;
+    struct_double *state1;
+    struct_double *state2;
+    MemoryContext agg_context;
+    MemoryContext old_context;
 
-	GET_AGG_CONTEXT("trimmed_combine_double", fcinfo, agg_context);
+    GET_AGG_CONTEXT("trimmed_combine_double", fcinfo, agg_context);
 
-	state1 = PG_ARGISNULL(0) ? NULL : (struct_double *) PG_GETARG_POINTER(0);
-	state2 = PG_ARGISNULL(1) ? NULL : (struct_double *) PG_GETARG_POINTER(1);
+    state1 = PG_ARGISNULL(0) ? NULL : (struct_double *) PG_GETARG_POINTER(0);
+    state2 = PG_ARGISNULL(1) ? NULL : (struct_double *) PG_GETARG_POINTER(1);
 
-	if (state2 == NULL)
-		PG_RETURN_POINTER(state1);
+    if (state2 == NULL)
+        PG_RETURN_POINTER(state1);
 
-	if (state1 == NULL)
-	{
-		old_context = MemoryContextSwitchTo(agg_context);
+    if (state1 == NULL)
+    {
+        old_context = MemoryContextSwitchTo(agg_context);
 
-		state1 = (struct_double *)palloc(sizeof(struct_double));
-		state1->nelements = state2->nelements;
-		state1->next = state2->next;
+        state1 = (struct_double *)palloc(sizeof(struct_double));
+        state1->nelements = state2->nelements;
+        state1->next = state2->next;
 
-		state1->sorted = state2->sorted;
+        state1->sorted = state2->sorted;
 
-		state1->quantiles = (double*)palloc(sizeof(double) * state2->nquantiles);
-		state1->elements = (double*)palloc(sizeof(double) * state2->nelements);
+        state1->quantiles = (double*)palloc(sizeof(double) * state2->nquantiles);
+        state1->elements = (double*)palloc(sizeof(double) * state2->nelements);
 
-		memcpy(state1->quantiles, state2->quantiles, sizeof(double) * state2->nquantiles);
-		memcpy(state1->elements, state2->elements, sizeof(double) * state2->nelements);
+        memcpy(state1->quantiles, state2->quantiles, sizeof(double) * state2->nquantiles);
+        memcpy(state1->elements, state2->elements, sizeof(double) * state2->nelements);
 
-		MemoryContextSwitchTo(old_context);
+        MemoryContextSwitchTo(old_context);
 
-		/* free the internal state */
-		pfree(state2->elements);
-		pfree(state2->quantiles);
-		state2->elements = NULL;
-		state2->quantiles = NULL;
+        /* free the internal state */
+        pfree(state2->elements);
+        pfree(state2->quantiles);
+        state2->elements = NULL;
+        state2->quantiles = NULL;
 
-		PG_RETURN_POINTER(state1);
-	}
+        PG_RETURN_POINTER(state1);
+    }
 
-	Assert((state1 != NULL) && (state2 != NULL));
+    Assert((state1 != NULL) && (state2 != NULL));
 
-	/* make sure both states are sorted */
-	sort_state_double(state1);
-	sort_state_double(state2);
+    /* make sure both states are sorted */
+    sort_state_double(state1);
+    sort_state_double(state2);
 
-	tmp = (double*)MemoryContextAlloc(agg_context,
-					  sizeof(double) * (state1->next + state2->next));
+    tmp = (double*)MemoryContextAlloc(agg_context,
+                      sizeof(double) * (state1->next + state2->next));
 
-	/* merge the two arrays */
-	i = j = k = 0;
-	while (true)
-	{
-		Assert(k <= (state1->next + state2->next));
-		Assert((i <= state1->next) && (j <= state2->next));
+    /* merge the two arrays */
+    i = j = k = 0;
+    while (true)
+    {
+        Assert(k <= (state1->next + state2->next));
+        Assert((i <= state1->next) && (j <= state2->next));
 
-		if ((i < state1->next) && (j < state2->next))
-		{
-			if (state1->elements[i] <= state2->elements[j])
-				tmp[k++] = state1->elements[i++];
-			else
-				tmp[k++] = state2->elements[j++];
-		}
-		else if (i < state1->nelements)
-			tmp[k++] = state1->elements[i++];
-		else if (j < state2->nelements)
-			tmp[k++] = state2->elements[j++];
-		else
-			/* no more elements to process */
-			break;
-	}
+        if ((i < state1->next) && (j < state2->next))
+        {
+            if (state1->elements[i] <= state2->elements[j])
+                tmp[k++] = state1->elements[i++];
+            else
+                tmp[k++] = state2->elements[j++];
+        }
+        else if (i < state1->nelements)
+            tmp[k++] = state1->elements[i++];
+        else if (j < state2->nelements)
+            tmp[k++] = state2->elements[j++];
+        else
+            /* no more elements to process */
+            break;
+    }
 
-	Assert(k == (state1->next + state2->next));
-	Assert((i == state1->next) && (j == state2->next));
+    Assert(k == (state1->next + state2->next));
+    Assert((i == state1->next) && (j == state2->next));
 
-	/* free the two arrays */
-	pfree(state1->elements);
-	pfree(state2->elements);
+    /* free the two arrays */
+    pfree(state1->elements);
+    pfree(state2->elements);
 
-	state1->elements = tmp;
+    state1->elements = tmp;
 
-	/* and finally remember the current number of elements */
-	state1->next += state2->next;
-	state1->nelements = state1->next;
+    /* and finally remember the current number of elements */
+    state1->next += state2->next;
+    state1->nelements = state1->next;
 
-	PG_RETURN_POINTER(state1);
+    PG_RETURN_POINTER(state1);
 }
 
 Datum
@@ -899,94 +899,94 @@ quantile_int32_deserial(PG_FUNCTION_ARGS)
 Datum
 quantile_int32_combine(PG_FUNCTION_ARGS)
 {
-	int i, j, k;
-	int32 *tmp;
-	struct_int32 *state1;
-	struct_int32 *state2;
-	MemoryContext agg_context;
-	MemoryContext old_context;
+    int i, j, k;
+    int32 *tmp;
+    struct_int32 *state1;
+    struct_int32 *state2;
+    MemoryContext agg_context;
+    MemoryContext old_context;
 
-	GET_AGG_CONTEXT("trimmed_combine_double", fcinfo, agg_context);
+    GET_AGG_CONTEXT("trimmed_combine_double", fcinfo, agg_context);
 
-	state1 = PG_ARGISNULL(0) ? NULL : (struct_int32 *) PG_GETARG_POINTER(0);
-	state2 = PG_ARGISNULL(1) ? NULL : (struct_int32 *) PG_GETARG_POINTER(1);
+    state1 = PG_ARGISNULL(0) ? NULL : (struct_int32 *) PG_GETARG_POINTER(0);
+    state2 = PG_ARGISNULL(1) ? NULL : (struct_int32 *) PG_GETARG_POINTER(1);
 
-	if (state2 == NULL)
-		PG_RETURN_POINTER(state1);
+    if (state2 == NULL)
+        PG_RETURN_POINTER(state1);
 
-	if (state1 == NULL)
-	{
-		old_context = MemoryContextSwitchTo(agg_context);
+    if (state1 == NULL)
+    {
+        old_context = MemoryContextSwitchTo(agg_context);
 
-		state1 = (struct_int32 *)palloc(sizeof(struct_int32));
-		state1->nelements = state2->nelements;
-		state1->next = state2->next;
+        state1 = (struct_int32 *)palloc(sizeof(struct_int32));
+        state1->nelements = state2->nelements;
+        state1->next = state2->next;
 
-		state1->sorted = state2->sorted;
+        state1->sorted = state2->sorted;
 
-		state1->quantiles = (double*)palloc(sizeof(double) * state2->nquantiles);
-		state1->elements = (int32*)palloc(sizeof(int32) * state2->nelements);
+        state1->quantiles = (double*)palloc(sizeof(double) * state2->nquantiles);
+        state1->elements = (int32*)palloc(sizeof(int32) * state2->nelements);
 
-		memcpy(state1->quantiles, state2->quantiles, sizeof(double) * state2->nquantiles);
-		memcpy(state1->elements, state2->elements, sizeof(int32) * state2->nelements);
+        memcpy(state1->quantiles, state2->quantiles, sizeof(double) * state2->nquantiles);
+        memcpy(state1->elements, state2->elements, sizeof(int32) * state2->nelements);
 
-		MemoryContextSwitchTo(old_context);
+        MemoryContextSwitchTo(old_context);
 
-		/* free the internal state */
-		pfree(state2->elements);
-		pfree(state2->quantiles);
-		state2->elements = NULL;
-		state2->quantiles = NULL;
+        /* free the internal state */
+        pfree(state2->elements);
+        pfree(state2->quantiles);
+        state2->elements = NULL;
+        state2->quantiles = NULL;
 
-		PG_RETURN_POINTER(state1);
-	}
+        PG_RETURN_POINTER(state1);
+    }
 
-	Assert((state1 != NULL) && (state2 != NULL));
+    Assert((state1 != NULL) && (state2 != NULL));
 
-	/* make sure both states are sorted */
-	sort_state_int32(state1);
-	sort_state_int32(state2);
+    /* make sure both states are sorted */
+    sort_state_int32(state1);
+    sort_state_int32(state2);
 
-	tmp = (int32*)MemoryContextAlloc(agg_context,
-					  sizeof(int32) * (state1->next + state2->next));
+    tmp = (int32*)MemoryContextAlloc(agg_context,
+                      sizeof(int32) * (state1->next + state2->next));
 
-	/* merge the two arrays */
-	i = j = k = 0;
-	while (true)
-	{
-		Assert(k <= (state1->next + state2->next));
-		Assert((i <= state1->next) && (j <= state2->next));
+    /* merge the two arrays */
+    i = j = k = 0;
+    while (true)
+    {
+        Assert(k <= (state1->next + state2->next));
+        Assert((i <= state1->next) && (j <= state2->next));
 
-		if ((i < state1->next) && (j < state2->next))
-		{
-			if (state1->elements[i] <= state2->elements[j])
-				tmp[k++] = state1->elements[i++];
-			else
-				tmp[k++] = state2->elements[j++];
-		}
-		else if (i < state1->nelements)
-			tmp[k++] = state1->elements[i++];
-		else if (j < state2->nelements)
-			tmp[k++] = state2->elements[j++];
-		else
-			/* no more elements to process */
-			break;
-	}
+        if ((i < state1->next) && (j < state2->next))
+        {
+            if (state1->elements[i] <= state2->elements[j])
+                tmp[k++] = state1->elements[i++];
+            else
+                tmp[k++] = state2->elements[j++];
+        }
+        else if (i < state1->nelements)
+            tmp[k++] = state1->elements[i++];
+        else if (j < state2->nelements)
+            tmp[k++] = state2->elements[j++];
+        else
+            /* no more elements to process */
+            break;
+    }
 
-	Assert(k == (state1->next + state2->next));
-	Assert((i == state1->next) && (j == state2->next));
+    Assert(k == (state1->next + state2->next));
+    Assert((i == state1->next) && (j == state2->next));
 
-	/* free the two arrays */
-	pfree(state1->elements);
-	pfree(state2->elements);
+    /* free the two arrays */
+    pfree(state1->elements);
+    pfree(state2->elements);
 
-	state1->elements = tmp;
+    state1->elements = tmp;
 
-	/* and finally remember the current number of elements */
-	state1->next += state2->next;
-	state1->nelements = state1->next;
+    /* and finally remember the current number of elements */
+    state1->next += state2->next;
+    state1->nelements = state1->next;
 
-	PG_RETURN_POINTER(state1);
+    PG_RETURN_POINTER(state1);
 }
 
 Datum
@@ -1065,94 +1065,94 @@ quantile_int64_deserial(PG_FUNCTION_ARGS)
 Datum
 quantile_int64_combine(PG_FUNCTION_ARGS)
 {
-	int i, j, k;
-	int64 *tmp;
-	struct_int64 *state1;
-	struct_int64 *state2;
-	MemoryContext agg_context;
-	MemoryContext old_context;
+    int i, j, k;
+    int64 *tmp;
+    struct_int64 *state1;
+    struct_int64 *state2;
+    MemoryContext agg_context;
+    MemoryContext old_context;
 
-	GET_AGG_CONTEXT("trimmed_combine_double", fcinfo, agg_context);
+    GET_AGG_CONTEXT("trimmed_combine_double", fcinfo, agg_context);
 
-	state1 = PG_ARGISNULL(0) ? NULL : (struct_int64 *) PG_GETARG_POINTER(0);
-	state2 = PG_ARGISNULL(1) ? NULL : (struct_int64 *) PG_GETARG_POINTER(1);
+    state1 = PG_ARGISNULL(0) ? NULL : (struct_int64 *) PG_GETARG_POINTER(0);
+    state2 = PG_ARGISNULL(1) ? NULL : (struct_int64 *) PG_GETARG_POINTER(1);
 
-	if (state2 == NULL)
-		PG_RETURN_POINTER(state1);
+    if (state2 == NULL)
+        PG_RETURN_POINTER(state1);
 
-	if (state1 == NULL)
-	{
-		old_context = MemoryContextSwitchTo(agg_context);
+    if (state1 == NULL)
+    {
+        old_context = MemoryContextSwitchTo(agg_context);
 
-		state1 = (struct_int64 *)palloc(sizeof(struct_int64));
-		state1->nelements = state2->nelements;
-		state1->next = state2->next;
+        state1 = (struct_int64 *)palloc(sizeof(struct_int64));
+        state1->nelements = state2->nelements;
+        state1->next = state2->next;
 
-		state1->sorted = state2->sorted;
+        state1->sorted = state2->sorted;
 
-		state1->quantiles = (double*)palloc(sizeof(double) * state2->nquantiles);
-		state1->elements = (int64*)palloc(sizeof(int64) * state2->nelements);
+        state1->quantiles = (double*)palloc(sizeof(double) * state2->nquantiles);
+        state1->elements = (int64*)palloc(sizeof(int64) * state2->nelements);
 
-		memcpy(state1->quantiles, state2->quantiles, sizeof(double) * state2->nquantiles);
-		memcpy(state1->elements, state2->elements, sizeof(int64) * state2->nelements);
+        memcpy(state1->quantiles, state2->quantiles, sizeof(double) * state2->nquantiles);
+        memcpy(state1->elements, state2->elements, sizeof(int64) * state2->nelements);
 
-		MemoryContextSwitchTo(old_context);
+        MemoryContextSwitchTo(old_context);
 
-		/* free the internal state */
-		pfree(state2->elements);
-		pfree(state2->quantiles);
-		state2->elements = NULL;
-		state2->quantiles = NULL;
+        /* free the internal state */
+        pfree(state2->elements);
+        pfree(state2->quantiles);
+        state2->elements = NULL;
+        state2->quantiles = NULL;
 
-		PG_RETURN_POINTER(state1);
-	}
+        PG_RETURN_POINTER(state1);
+    }
 
-	Assert((state1 != NULL) && (state2 != NULL));
+    Assert((state1 != NULL) && (state2 != NULL));
 
-	/* make sure both states are sorted */
-	sort_state_int64(state1);
-	sort_state_int64(state2);
+    /* make sure both states are sorted */
+    sort_state_int64(state1);
+    sort_state_int64(state2);
 
-	tmp = (int64*)MemoryContextAlloc(agg_context,
-					  sizeof(int64) * (state1->next + state2->next));
+    tmp = (int64*)MemoryContextAlloc(agg_context,
+                      sizeof(int64) * (state1->next + state2->next));
 
-	/* merge the two arrays */
-	i = j = k = 0;
-	while (true)
-	{
-		Assert(k <= (state1->next + state2->next));
-		Assert((i <= state1->next) && (j <= state2->next));
+    /* merge the two arrays */
+    i = j = k = 0;
+    while (true)
+    {
+        Assert(k <= (state1->next + state2->next));
+        Assert((i <= state1->next) && (j <= state2->next));
 
-		if ((i < state1->next) && (j < state2->next))
-		{
-			if (state1->elements[i] <= state2->elements[j])
-				tmp[k++] = state1->elements[i++];
-			else
-				tmp[k++] = state2->elements[j++];
-		}
-		else if (i < state1->nelements)
-			tmp[k++] = state1->elements[i++];
-		else if (j < state2->nelements)
-			tmp[k++] = state2->elements[j++];
-		else
-			/* no more elements to process */
-			break;
-	}
+        if ((i < state1->next) && (j < state2->next))
+        {
+            if (state1->elements[i] <= state2->elements[j])
+                tmp[k++] = state1->elements[i++];
+            else
+                tmp[k++] = state2->elements[j++];
+        }
+        else if (i < state1->nelements)
+            tmp[k++] = state1->elements[i++];
+        else if (j < state2->nelements)
+            tmp[k++] = state2->elements[j++];
+        else
+            /* no more elements to process */
+            break;
+    }
 
-	Assert(k == (state1->next + state2->next));
-	Assert((i == state1->next) && (j == state2->next));
+    Assert(k == (state1->next + state2->next));
+    Assert((i == state1->next) && (j == state2->next));
 
-	/* free the two arrays */
-	pfree(state1->elements);
-	pfree(state2->elements);
+    /* free the two arrays */
+    pfree(state1->elements);
+    pfree(state2->elements);
 
-	state1->elements = tmp;
+    state1->elements = tmp;
 
-	/* and finally remember the current number of elements */
-	state1->next += state2->next;
-	state1->nelements = state1->next;
+    /* and finally remember the current number of elements */
+    state1->next += state2->next;
+    state1->nelements = state1->next;
 
-	PG_RETURN_POINTER(state1);
+    PG_RETURN_POINTER(state1);
 }
 
 Datum
