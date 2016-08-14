@@ -25,8 +25,6 @@
 PG_MODULE_MAGIC;
 #endif
 
-#if (PG_VERSION_NUM >= 90000)
-
 #define GET_AGG_CONTEXT(fname, fcinfo, aggcontext)  \
     if (! AggCheckCallContext(fcinfo, &aggcontext)) {   \
         elog(ERROR, "%s called in non-aggregate context", fname);  \
@@ -36,126 +34,6 @@ PG_MODULE_MAGIC;
     if (! AggCheckCallContext(fcinfo, NULL)) {   \
         elog(ERROR, "%s called in non-aggregate context", fname);  \
     }
-
-#elif (PG_VERSION_NUM >= 80400)
-
-#define GET_AGG_CONTEXT(fname, fcinfo, aggcontext)  \
-    if (fcinfo->context && IsA(fcinfo->context, AggState)) {  \
-        aggcontext = ((AggState *) fcinfo->context)->aggcontext;  \
-    } else if (fcinfo->context && IsA(fcinfo->context, WindowAggState)) {  \
-        aggcontext = ((WindowAggState *) fcinfo->context)->wincontext;  \
-    } else {  \
-        elog(ERROR, "%s called in non-aggregate context", fname);  \
-        aggcontext = NULL;  \
-    }
-
-#define CHECK_AGG_CONTEXT(fname, fcinfo)  \
-    if (!(fcinfo->context &&  \
-        (IsA(fcinfo->context, AggState) ||  \
-        IsA(fcinfo->context, WindowAggState))))  \
-    {  \
-        elog(ERROR, "%s called in non-aggregate context", fname);  \
-    }
-
-#else
-
-#define GET_AGG_CONTEXT(fname, fcinfo, aggcontext)  \
-    if (fcinfo->context && IsA(fcinfo->context, AggState)) {  \
-        aggcontext = ((AggState *) fcinfo->context)->aggcontext;  \
-    } else {  \
-        elog(ERROR, "%s called in non-aggregate context", fname);  \
-        aggcontext = NULL;  \
-    }
-
-#define CHECK_AGG_CONTEXT(fname, fcinfo)  \
-    if (!(fcinfo->context &&  \
-        (IsA(fcinfo->context, AggState))))  \
-    {  \
-        elog(ERROR, "%s called in non-aggregate context", fname);  \
-    }
-
-/* backward compatibility with 8.3 (macros copied mostly from src/include/access/tupmacs.h) */
-
-#if SIZEOF_DATUM == 8
-
-#define fetch_att(T,attbyval,attlen) \
-( \
-    (attbyval) ? \
-    ( \
-        (attlen) == (int) sizeof(Datum) ? \
-            *((Datum *)(T)) \
-        : \
-      ( \
-        (attlen) == (int) sizeof(int32) ? \
-            Int32GetDatum(*((int32 *)(T))) \
-        : \
-        ( \
-            (attlen) == (int) sizeof(int16) ? \
-                Int16GetDatum(*((int16 *)(T))) \
-            : \
-            ( \
-                AssertMacro((attlen) == 1), \
-                CharGetDatum(*((char *)(T))) \
-            ) \
-        ) \
-      ) \
-    ) \
-    : \
-    PointerGetDatum((char *) (T)) \
-)
-#else                           /* SIZEOF_DATUM != 8 */
-
-#define fetch_att(T,attbyval,attlen) \
-( \
-    (attbyval) ? \
-    ( \
-        (attlen) == (int) sizeof(int32) ? \
-            Int32GetDatum(*((int32 *)(T))) \
-        : \
-        ( \
-            (attlen) == (int) sizeof(int16) ? \
-                Int16GetDatum(*((int16 *)(T))) \
-            : \
-            ( \
-                AssertMacro((attlen) == 1), \
-                CharGetDatum(*((char *)(T))) \
-            ) \
-        ) \
-    ) \
-    : \
-    PointerGetDatum((char *) (T)) \
-)
-#endif   /* SIZEOF_DATUM == 8 */
-
-#define att_addlength_pointer(cur_offset, attlen, attptr) \
-( \
-    ((attlen) > 0) ? \
-    ( \
-        (cur_offset) + (attlen) \
-    ) \
-    : (((attlen) == -1) ? \
-    ( \
-        (cur_offset) + VARSIZE_ANY(attptr) \
-    ) \
-    : \
-    ( \
-        AssertMacro((attlen) == -2), \
-        (cur_offset) + (strlen((char *) (attptr)) + 1) \
-    )) \
-)
-
-#define att_align_nominal(cur_offset, attalign) \
-( \
-    ((attalign) == 'i') ? INTALIGN(cur_offset) : \
-     (((attalign) == 'c') ? (long) (cur_offset) : \
-      (((attalign) == 'd') ? DOUBLEALIGN(cur_offset) : \
-       ( \
-            AssertMacro((attalign) == 's'), \
-            SHORTALIGN(cur_offset) \
-       ))) \
-)
-
-#endif
 
 /* Structures used to keep the data - the 'elements' array is extended
  * on the fly if needed. */
