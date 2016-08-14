@@ -43,6 +43,7 @@ typedef struct struct_double {
     int nquantiles;
     int nelements;
     int next;
+    bool sorted;
 
     double * quantiles;
     double * elements;
@@ -54,6 +55,7 @@ typedef struct struct_int32 {
     int nquantiles;
     int nelements;
     int next;
+    bool sorted;
 
     double * quantiles;
     int32  * elements;
@@ -65,6 +67,7 @@ typedef struct struct_int64 {
     int nquantiles;
     int nelements;
     int next;
+    bool sorted;
 
     double * quantiles;
     int64  * elements;
@@ -81,6 +84,10 @@ typedef struct struct_numeric {
     Numeric * elements;
 
 } struct_numeric;
+
+static void sort_state_double(struct_double *state);
+static void sort_state_int32(struct_int32 *state);
+static void sort_state_int64(struct_int64 *state);
 
 /* comparators, used for qsort */
 
@@ -115,11 +122,19 @@ PG_FUNCTION_INFO_V1(quantile_append_double);
 PG_FUNCTION_INFO_V1(quantile_double_array);
 PG_FUNCTION_INFO_V1(quantile_double);
 
+PG_FUNCTION_INFO_V1(quantile_double_serial);
+PG_FUNCTION_INFO_V1(quantile_double_deserial);
+PG_FUNCTION_INFO_V1(quantile_double_combine);
+
 PG_FUNCTION_INFO_V1(quantile_append_int32_array);
 PG_FUNCTION_INFO_V1(quantile_append_int32);
 
 PG_FUNCTION_INFO_V1(quantile_int32_array);
 PG_FUNCTION_INFO_V1(quantile_int32);
+
+PG_FUNCTION_INFO_V1(quantile_int32_serial);
+PG_FUNCTION_INFO_V1(quantile_int32_deserial);
+PG_FUNCTION_INFO_V1(quantile_int32_combine);
 
 PG_FUNCTION_INFO_V1(quantile_append_int64_array);
 PG_FUNCTION_INFO_V1(quantile_append_int64);
@@ -127,11 +142,19 @@ PG_FUNCTION_INFO_V1(quantile_append_int64);
 PG_FUNCTION_INFO_V1(quantile_int64_array);
 PG_FUNCTION_INFO_V1(quantile_int64);
 
+PG_FUNCTION_INFO_V1(quantile_int64_serial);
+PG_FUNCTION_INFO_V1(quantile_int64_deserial);
+PG_FUNCTION_INFO_V1(quantile_int64_combine);
+
 PG_FUNCTION_INFO_V1(quantile_append_numeric_array);
 PG_FUNCTION_INFO_V1(quantile_append_numeric);
 
 PG_FUNCTION_INFO_V1(quantile_numeric_array);
 PG_FUNCTION_INFO_V1(quantile_numeric);
+
+PG_FUNCTION_INFO_V1(quantile_numeric_serial);
+PG_FUNCTION_INFO_V1(quantile_numeric_deserial);
+PG_FUNCTION_INFO_V1(quantile_numeric_combine);
 
 Datum quantile_append_double_array(PG_FUNCTION_ARGS);
 Datum quantile_append_double(PG_FUNCTION_ARGS);
@@ -139,11 +162,19 @@ Datum quantile_append_double(PG_FUNCTION_ARGS);
 Datum quantile_double_array(PG_FUNCTION_ARGS);
 Datum quantile_double(PG_FUNCTION_ARGS);
 
+Datum quantile_double_serial(PG_FUNCTION_ARGS);
+Datum quantile_double_deserial(PG_FUNCTION_ARGS);
+Datum quantile_double_combine(PG_FUNCTION_ARGS);
+
 Datum quantile_append_int32_array(PG_FUNCTION_ARGS);
 Datum quantile_append_int32(PG_FUNCTION_ARGS);
 
 Datum quantile_int32_array(PG_FUNCTION_ARGS);
 Datum quantile_int32(PG_FUNCTION_ARGS);
+
+Datum quantile_int32_serial(PG_FUNCTION_ARGS);
+Datum quantile_int32_deserial(PG_FUNCTION_ARGS);
+Datum quantile_int32_combine(PG_FUNCTION_ARGS);
 
 Datum quantile_append_int64_array(PG_FUNCTION_ARGS);
 Datum quantile_append_int64(PG_FUNCTION_ARGS);
@@ -194,6 +225,7 @@ quantile_append_double(PG_FUNCTION_ARGS)
         data->elements  = (double*)palloc(4*sizeof(double));    /* 4*8B = 32B */
         data->nelements = 4;
         data->next = 0;
+        data->sorted = false;
 
         data->quantiles = (double*)palloc(sizeof(double));
         data->quantiles[0] = PG_GETARG_FLOAT8(2);
@@ -246,6 +278,7 @@ quantile_append_double_array(PG_FUNCTION_ARGS)
         data->elements  = (double*)palloc(4*sizeof(double));
         data->nelements = 4;
         data->next = 0;
+        data->sorted = false;
 
         /* read the array of quantiles */
         data->quantiles = array_to_double(fcinfo, PG_GETARG_ARRAYTYPE_P(2), &data->nquantiles);
@@ -404,6 +437,7 @@ quantile_append_int32(PG_FUNCTION_ARGS)
         data->nquantiles = 1;
         data->quantiles[0] = PG_GETARG_FLOAT8(2);
         data->next = 0;
+        data->sorted = false;
 
         check_quantiles(data->nquantiles, data->quantiles);
     }
@@ -452,6 +486,7 @@ quantile_append_int32_array(PG_FUNCTION_ARGS)
         data->elements  = (int32*)palloc(4*sizeof(int32));
         data->nelements = 4;
         data->next = 0;
+        data->sorted = false;
 
         /* read the array of quantiles */
         data->quantiles = array_to_double(fcinfo, PG_GETARG_ARRAYTYPE_P(2), &data->nquantiles);
@@ -507,6 +542,7 @@ quantile_append_int64(PG_FUNCTION_ARGS)
         data->nquantiles = 1;
         data->quantiles[0] = PG_GETARG_FLOAT8(2);
         data->next = 0;
+        data->sorted = false;
 
         check_quantiles(data->nquantiles, data->quantiles);
     }
@@ -555,6 +591,7 @@ quantile_append_int64_array(PG_FUNCTION_ARGS)
         data->elements  = (int64*)palloc(4*sizeof(int64));
         data->nelements = 4;
         data->next = 0;
+        data->sorted = false;
 
         /* read the array of quantiles */
         data->quantiles = array_to_double(fcinfo, PG_GETARG_ARRAYTYPE_P(2), &data->nquantiles);
@@ -579,6 +616,504 @@ quantile_append_int64_array(PG_FUNCTION_ARGS)
 }
 
 Datum
+quantile_double_serial(PG_FUNCTION_ARGS)
+{
+    struct_double   *state = (struct_double *)PG_GETARG_POINTER(0);
+    Size            hlen = offsetof(struct_double, quantiles);        /* header */
+    Size            qlen = state->nquantiles * sizeof(double);        /* quantiles */
+    Size            dlen = state->next * sizeof(double);            /* elements */
+    bytea           *out = (bytea *)palloc(VARHDRSZ + qlen + dlen + hlen);
+    char           *ptr;
+
+    CHECK_AGG_CONTEXT("quantile_double_serial", fcinfo);
+
+    /* we want to serialize the data in sorted format */
+    sort_state_double(state);
+
+    SET_VARSIZE(out, VARHDRSZ + qlen + dlen + hlen);
+    ptr = VARDATA(out);
+
+    memcpy(ptr, state, hlen);
+    ptr += hlen;
+
+    memcpy(ptr, state->quantiles, qlen);
+    ptr += qlen;
+
+    memcpy(ptr, state->elements, dlen);
+    ptr += dlen;
+
+    Assert(ptr == (char*)out + VARHDRSZ + hlen + qlen + dlen);
+
+    PG_RETURN_BYTEA_P(out);
+}
+
+Datum
+quantile_double_deserial(PG_FUNCTION_ARGS)
+{
+    struct_double *out = (struct_double *)palloc(sizeof(struct_double));
+    bytea  *state = (bytea *)PG_GETARG_POINTER(0);
+    Size    len = VARSIZE_ANY_EXHDR(state);
+    char   *ptr = VARDATA(state);
+
+    CHECK_AGG_CONTEXT("quantile_double_deserial", fcinfo);
+
+    Assert(len > 0);
+
+    /* copy the header */
+    memcpy(out, ptr, offsetof(struct_double, quantiles));
+    ptr += offsetof(struct_double, quantiles);
+
+    Assert(out->nquantiles > 0);
+    Assert((out->next > 0) && (out->nelements >= out->next));
+    Assert(len == offsetof(struct_double, quantiles) +
+                  (out->nquantiles * sizeof(double)) +
+                  (out->next * sizeof(double)));
+    Assert(out->sorted);
+
+    /* we only allocate the necessary space */
+    out->quantiles = (double *)palloc(out->nquantiles * sizeof(double));
+    out->elements = (double *)palloc(out->next * sizeof(double));
+
+    out->nelements = out->next;
+
+    memcpy((void *)out->quantiles, ptr, out->nquantiles * sizeof(double));
+    ptr += out->nquantiles * sizeof(double);
+
+    memcpy((void *)out->elements, ptr, out->next * sizeof(double));
+    ptr += out->next * sizeof(double);
+
+    /* make sure we've consumed all serialized data */
+    Assert(ptr == (char*)state + VARSIZE(state));
+
+    PG_RETURN_POINTER(out);
+}
+
+Datum
+quantile_double_combine(PG_FUNCTION_ARGS)
+{
+	int i, j, k;
+	double *tmp;
+	struct_double *state1;
+	struct_double *state2;
+	MemoryContext agg_context;
+	MemoryContext old_context;
+
+	GET_AGG_CONTEXT("trimmed_combine_double", fcinfo, agg_context);
+
+	state1 = PG_ARGISNULL(0) ? NULL : (struct_double *) PG_GETARG_POINTER(0);
+	state2 = PG_ARGISNULL(1) ? NULL : (struct_double *) PG_GETARG_POINTER(1);
+
+	if (state2 == NULL)
+		PG_RETURN_POINTER(state1);
+
+	if (state1 == NULL)
+	{
+		old_context = MemoryContextSwitchTo(agg_context);
+
+		state1 = (struct_double *)palloc(sizeof(struct_double));
+		state1->nelements = state2->nelements;
+		state1->next = state2->next;
+
+		state1->sorted = state2->sorted;
+
+		state1->quantiles = (double*)palloc(sizeof(double) * state2->nquantiles);
+		state1->elements = (double*)palloc(sizeof(double) * state2->nelements);
+
+		memcpy(state1->quantiles, state2->quantiles, sizeof(double) * state2->nquantiles);
+		memcpy(state1->elements, state2->elements, sizeof(double) * state2->nelements);
+
+		MemoryContextSwitchTo(old_context);
+
+		/* free the internal state */
+		pfree(state2->elements);
+		pfree(state2->quantiles);
+		state2->elements = NULL;
+		state2->quantiles = NULL;
+
+		PG_RETURN_POINTER(state1);
+	}
+
+	Assert((state1 != NULL) && (state2 != NULL));
+
+	/* make sure both states are sorted */
+	sort_state_double(state1);
+	sort_state_double(state2);
+
+	tmp = (double*)MemoryContextAlloc(agg_context,
+					  sizeof(double) * (state1->next + state2->next));
+
+	/* merge the two arrays */
+	i = j = k = 0;
+	while (true)
+	{
+		Assert(k <= (state1->next + state2->next));
+		Assert((i <= state1->next) && (j <= state2->next));
+
+		if ((i < state1->next) && (j < state2->next))
+		{
+			if (state1->elements[i] <= state2->elements[j])
+				tmp[k++] = state1->elements[i++];
+			else
+				tmp[k++] = state2->elements[j++];
+		}
+		else if (i < state1->nelements)
+			tmp[k++] = state1->elements[i++];
+		else if (j < state2->nelements)
+			tmp[k++] = state2->elements[j++];
+		else
+			/* no more elements to process */
+			break;
+	}
+
+	Assert(k == (state1->next + state2->next));
+	Assert((i == state1->next) && (j == state2->next));
+
+	/* free the two arrays */
+	pfree(state1->elements);
+	pfree(state2->elements);
+
+	state1->elements = tmp;
+
+	/* and finally remember the current number of elements */
+	state1->next += state2->next;
+	state1->nelements = state1->next;
+
+	PG_RETURN_POINTER(state1);
+}
+
+Datum
+quantile_int32_serial(PG_FUNCTION_ARGS)
+{
+    struct_int32   *state = (struct_int32 *)PG_GETARG_POINTER(0);
+    Size            hlen = offsetof(struct_int32, quantiles);        /* header */
+    Size            qlen = state->nquantiles * sizeof(double);       /* quantiles */
+    Size            dlen = state->next * sizeof(int32);              /* elements */
+    bytea           *out = (bytea *)palloc(VARHDRSZ + qlen + dlen + hlen);
+    char           *ptr;
+
+    CHECK_AGG_CONTEXT("quantile_int32_serial", fcinfo);
+
+    /* we want to serialize the data in sorted format */
+    sort_state_int32(state);
+
+    SET_VARSIZE(out, VARHDRSZ + qlen + dlen + hlen);
+    ptr = VARDATA(out);
+
+    memcpy(ptr, state, hlen);
+    ptr += hlen;
+
+    memcpy(ptr, state->quantiles, qlen);
+    ptr += qlen;
+
+    memcpy(ptr, state->elements, dlen);
+    ptr += dlen;
+
+    Assert(ptr == (char*)out + VARHDRSZ + hlen + qlen + dlen);
+
+    PG_RETURN_BYTEA_P(out);
+}
+
+Datum
+quantile_int32_deserial(PG_FUNCTION_ARGS)
+{
+    struct_int32 *out = (struct_int32 *)palloc(sizeof(struct_int32));
+    bytea  *state = (bytea *)PG_GETARG_POINTER(0);
+    Size    len = VARSIZE_ANY_EXHDR(state);
+    char   *ptr = VARDATA(state);
+
+    CHECK_AGG_CONTEXT("quantile_double_deserial", fcinfo);
+
+    Assert(len > 0);
+
+    /* copy the header */
+    memcpy(out, ptr, offsetof(struct_int32, quantiles));
+    ptr += offsetof(struct_int32, quantiles);
+
+    Assert(out->nquantiles > 0);
+    Assert((out->next > 0) && (out->nelements >= out->next));
+    Assert(len == offsetof(struct_int32, quantiles) +
+                  (out->nquantiles * sizeof(double)) +
+                  (out->next * sizeof(int32)));
+    Assert(out->sorted);
+
+    /* we only allocate the necessary space */
+    out->quantiles = (double *)palloc(out->nquantiles * sizeof(double));
+    out->elements = (int32 *)palloc(out->next * sizeof(int32));
+
+    out->nelements = out->next;
+
+    memcpy((void *)out->quantiles, ptr, out->nquantiles * sizeof(double));
+    ptr += out->nquantiles * sizeof(double);
+
+    memcpy((void *)out->elements, ptr, out->next * sizeof(int32));
+    ptr += out->next * sizeof(int32);
+
+    /* make sure we've consumed all serialized data */
+    Assert(ptr == (char*)state + VARSIZE(state));
+
+    PG_RETURN_POINTER(out);
+}
+
+Datum
+quantile_int32_combine(PG_FUNCTION_ARGS)
+{
+	int i, j, k;
+	int32 *tmp;
+	struct_int32 *state1;
+	struct_int32 *state2;
+	MemoryContext agg_context;
+	MemoryContext old_context;
+
+	GET_AGG_CONTEXT("trimmed_combine_double", fcinfo, agg_context);
+
+	state1 = PG_ARGISNULL(0) ? NULL : (struct_int32 *) PG_GETARG_POINTER(0);
+	state2 = PG_ARGISNULL(1) ? NULL : (struct_int32 *) PG_GETARG_POINTER(1);
+
+	if (state2 == NULL)
+		PG_RETURN_POINTER(state1);
+
+	if (state1 == NULL)
+	{
+		old_context = MemoryContextSwitchTo(agg_context);
+
+		state1 = (struct_int32 *)palloc(sizeof(struct_int32));
+		state1->nelements = state2->nelements;
+		state1->next = state2->next;
+
+		state1->sorted = state2->sorted;
+
+		state1->quantiles = (double*)palloc(sizeof(double) * state2->nquantiles);
+		state1->elements = (int32*)palloc(sizeof(int32) * state2->nelements);
+
+		memcpy(state1->quantiles, state2->quantiles, sizeof(double) * state2->nquantiles);
+		memcpy(state1->elements, state2->elements, sizeof(int32) * state2->nelements);
+
+		MemoryContextSwitchTo(old_context);
+
+		/* free the internal state */
+		pfree(state2->elements);
+		pfree(state2->quantiles);
+		state2->elements = NULL;
+		state2->quantiles = NULL;
+
+		PG_RETURN_POINTER(state1);
+	}
+
+	Assert((state1 != NULL) && (state2 != NULL));
+
+	/* make sure both states are sorted */
+	sort_state_int32(state1);
+	sort_state_int32(state2);
+
+	tmp = (int32*)MemoryContextAlloc(agg_context,
+					  sizeof(int32) * (state1->next + state2->next));
+
+	/* merge the two arrays */
+	i = j = k = 0;
+	while (true)
+	{
+		Assert(k <= (state1->next + state2->next));
+		Assert((i <= state1->next) && (j <= state2->next));
+
+		if ((i < state1->next) && (j < state2->next))
+		{
+			if (state1->elements[i] <= state2->elements[j])
+				tmp[k++] = state1->elements[i++];
+			else
+				tmp[k++] = state2->elements[j++];
+		}
+		else if (i < state1->nelements)
+			tmp[k++] = state1->elements[i++];
+		else if (j < state2->nelements)
+			tmp[k++] = state2->elements[j++];
+		else
+			/* no more elements to process */
+			break;
+	}
+
+	Assert(k == (state1->next + state2->next));
+	Assert((i == state1->next) && (j == state2->next));
+
+	/* free the two arrays */
+	pfree(state1->elements);
+	pfree(state2->elements);
+
+	state1->elements = tmp;
+
+	/* and finally remember the current number of elements */
+	state1->next += state2->next;
+	state1->nelements = state1->next;
+
+	PG_RETURN_POINTER(state1);
+}
+
+Datum
+quantile_int64_serial(PG_FUNCTION_ARGS)
+{
+    struct_int64   *state = (struct_int64 *)PG_GETARG_POINTER(0);
+    Size            hlen = offsetof(struct_int64, quantiles);      /* header */
+    Size            qlen = state->nquantiles * sizeof(double);     /* quantiles */
+    Size            dlen = state->next * sizeof(int64);            /* elements */
+    bytea           *out = (bytea *)palloc(VARHDRSZ + qlen + dlen + hlen);
+    char           *ptr;
+
+    CHECK_AGG_CONTEXT("quantile_int64_serial", fcinfo);
+
+    /* we want to serialize the data in sorted format */
+    sort_state_int64(state);
+
+    SET_VARSIZE(out, VARHDRSZ + qlen + dlen + hlen);
+    ptr = VARDATA(out);
+
+    memcpy(ptr, state, hlen);
+    ptr += hlen;
+
+    memcpy(ptr, state->quantiles, qlen);
+    ptr += qlen;
+
+    memcpy(ptr, state->elements, dlen);
+    ptr += dlen;
+
+    Assert(ptr == (char*)out + VARHDRSZ + hlen + qlen + dlen);
+
+    PG_RETURN_BYTEA_P(out);
+}
+
+Datum
+quantile_int64_deserial(PG_FUNCTION_ARGS)
+{
+    struct_int64 *out = (struct_int64 *)palloc(sizeof(struct_int64));
+    bytea  *state = (bytea *)PG_GETARG_POINTER(0);
+    Size    len = VARSIZE_ANY_EXHDR(state);
+    char   *ptr = VARDATA(state);
+
+    CHECK_AGG_CONTEXT("quantile_double_deserial", fcinfo);
+
+    Assert(len > 0);
+
+    /* copy the header */
+    memcpy(out, ptr, offsetof(struct_int64, quantiles));
+    ptr += offsetof(struct_int64, quantiles);
+
+    Assert(out->nquantiles > 0);
+    Assert((out->next > 0) && (out->nelements >= out->next));
+    Assert(len == offsetof(struct_int64, quantiles) +
+                  (out->nquantiles * sizeof(double)) +
+                  (out->next * sizeof(int64)));
+    Assert(out->sorted);
+
+    /* we only allocate the necessary space */
+    out->quantiles = (double *)palloc(out->nquantiles * sizeof(double));
+    out->elements = (int64 *)palloc(out->next * sizeof(int64));
+
+    out->nelements = out->next;
+
+    memcpy((void *)out->quantiles, ptr, out->nquantiles * sizeof(double));
+    ptr += out->nquantiles * sizeof(double);
+
+    memcpy((void *)out->elements, ptr, out->next * sizeof(int64));
+    ptr += out->next * sizeof(int64);
+
+    /* make sure we've consumed all serialized data */
+    Assert(ptr == (char*)state + VARSIZE(state));
+
+    PG_RETURN_POINTER(out);
+}
+
+Datum
+quantile_int64_combine(PG_FUNCTION_ARGS)
+{
+	int i, j, k;
+	int64 *tmp;
+	struct_int64 *state1;
+	struct_int64 *state2;
+	MemoryContext agg_context;
+	MemoryContext old_context;
+
+	GET_AGG_CONTEXT("trimmed_combine_double", fcinfo, agg_context);
+
+	state1 = PG_ARGISNULL(0) ? NULL : (struct_int64 *) PG_GETARG_POINTER(0);
+	state2 = PG_ARGISNULL(1) ? NULL : (struct_int64 *) PG_GETARG_POINTER(1);
+
+	if (state2 == NULL)
+		PG_RETURN_POINTER(state1);
+
+	if (state1 == NULL)
+	{
+		old_context = MemoryContextSwitchTo(agg_context);
+
+		state1 = (struct_int64 *)palloc(sizeof(struct_int64));
+		state1->nelements = state2->nelements;
+		state1->next = state2->next;
+
+		state1->sorted = state2->sorted;
+
+		state1->quantiles = (double*)palloc(sizeof(double) * state2->nquantiles);
+		state1->elements = (int64*)palloc(sizeof(int64) * state2->nelements);
+
+		memcpy(state1->quantiles, state2->quantiles, sizeof(double) * state2->nquantiles);
+		memcpy(state1->elements, state2->elements, sizeof(int64) * state2->nelements);
+
+		MemoryContextSwitchTo(old_context);
+
+		/* free the internal state */
+		pfree(state2->elements);
+		pfree(state2->quantiles);
+		state2->elements = NULL;
+		state2->quantiles = NULL;
+
+		PG_RETURN_POINTER(state1);
+	}
+
+	Assert((state1 != NULL) && (state2 != NULL));
+
+	/* make sure both states are sorted */
+	sort_state_int64(state1);
+	sort_state_int64(state2);
+
+	tmp = (int64*)MemoryContextAlloc(agg_context,
+					  sizeof(int64) * (state1->next + state2->next));
+
+	/* merge the two arrays */
+	i = j = k = 0;
+	while (true)
+	{
+		Assert(k <= (state1->next + state2->next));
+		Assert((i <= state1->next) && (j <= state2->next));
+
+		if ((i < state1->next) && (j < state2->next))
+		{
+			if (state1->elements[i] <= state2->elements[j])
+				tmp[k++] = state1->elements[i++];
+			else
+				tmp[k++] = state2->elements[j++];
+		}
+		else if (i < state1->nelements)
+			tmp[k++] = state1->elements[i++];
+		else if (j < state2->nelements)
+			tmp[k++] = state2->elements[j++];
+		else
+			/* no more elements to process */
+			break;
+	}
+
+	Assert(k == (state1->next + state2->next));
+	Assert((i == state1->next) && (j == state2->next));
+
+	/* free the two arrays */
+	pfree(state1->elements);
+	pfree(state2->elements);
+
+	state1->elements = tmp;
+
+	/* and finally remember the current number of elements */
+	state1->next += state2->next;
+	state1->nelements = state1->next;
+
+	PG_RETURN_POINTER(state1);
+}
+
+Datum
 quantile_double(PG_FUNCTION_ARGS)
 {
     int     idx = 0;
@@ -592,7 +1127,7 @@ quantile_double(PG_FUNCTION_ARGS)
 
     data = (struct_double*)PG_GETARG_POINTER(0);
 
-    qsort(data->elements, data->next, sizeof(double), &double_comparator);
+    sort_state_double(data);
 
     if (data->quantiles[0] > 0)
         idx = (int)ceil(data->next * data->quantiles[0]) - 1;
@@ -617,7 +1152,7 @@ quantile_double_array(PG_FUNCTION_ARGS)
 
     result = palloc(data->nquantiles * sizeof(double));
 
-    qsort(data->elements, data->next, sizeof(double), &double_comparator);
+    sort_state_double(data);
 
     for (i = 0; i < data->nquantiles; i++)
     {
@@ -644,7 +1179,7 @@ quantile_int32(PG_FUNCTION_ARGS)
 
     data = (struct_int32*)PG_GETARG_POINTER(0);
 
-    qsort(data->elements, data->next, sizeof(int32), &int32_comparator);
+    sort_state_int32(data);
 
     if (data->quantiles[0] > 0)
         idx = (int)ceil(data->next * data->quantiles[0]) - 1;
@@ -668,7 +1203,7 @@ quantile_int32_array(PG_FUNCTION_ARGS)
 
     result = palloc(data->nquantiles * sizeof(int32));
 
-    qsort(data->elements, data->next, sizeof(int32), &int32_comparator);
+    sort_state_int32(data);
 
     for (i = 0; i < data->nquantiles; i++)
     {
@@ -695,7 +1230,7 @@ quantile_int64(PG_FUNCTION_ARGS)
 
     data = (struct_int64*)PG_GETARG_POINTER(0);
 
-    qsort(data->elements, data->next, sizeof(int64), &int64_comparator);
+    sort_state_int64(data);
 
     if (data->quantiles[0] > 0)
         idx = (int)ceil(data->next * data->quantiles[0]) - 1;
@@ -719,7 +1254,7 @@ quantile_int64_array(PG_FUNCTION_ARGS)
 
     result = palloc(data->nquantiles * sizeof(int64));
 
-    qsort(data->elements, data->next, sizeof(int64), &int64_comparator);
+    sort_state_int64(data);
 
     for (i = 0; i < data->nquantiles; i++)
     {
@@ -1010,4 +1545,34 @@ check_quantiles(int nquantiles, double * quantiles)
     for (i = 0; i < nquantiles; i++)
         if (quantiles[i] < 0 || quantiles[i] > 1)
             elog(ERROR, "invalid percentile value %f - needs to be in [0,1]", quantiles[i]);
+}
+
+static void
+sort_state_double(struct_double *state)
+{
+    if (state->sorted)
+        return;
+
+    pg_qsort(state->elements, state->next, sizeof(double), &double_comparator);
+    state->sorted = true;
+}
+
+static void
+sort_state_int32(struct_int32 *state)
+{
+    if (state->sorted)
+        return;
+
+    pg_qsort(state->elements, state->next, sizeof(int32), &int32_comparator);
+    state->sorted = true;
+}
+
+static void
+sort_state_int64(struct_int64 *state)
+{
+    if (state->sorted)
+        return;
+
+    pg_qsort(state->elements, state->next, sizeof(int64), &int64_comparator);
+    state->sorted = true;
 }

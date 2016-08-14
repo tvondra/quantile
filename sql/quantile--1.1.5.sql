@@ -19,16 +19,39 @@ CREATE OR REPLACE FUNCTION quantile_double_array(p_pointer internal)
     AS 'quantile', 'quantile_double_array'
     LANGUAGE C IMMUTABLE;
 
+CREATE OR REPLACE FUNCTION quantile_double_serial(p_pointer internal)
+    RETURNS bytea
+    AS 'quantile', 'quantile_double_serial'
+    LANGUAGE C IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION quantile_double_deserial(p_state bytea, p_dummy internal)
+    RETURNS internal
+    AS 'quantile', 'quantile_double_deserial'
+    LANGUAGE C IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION quantile_double_combine(p_state1 internal, p_state2 internal)
+    RETURNS internal
+    AS 'quantile', 'quantile_double_combine'
+    LANGUAGE C IMMUTABLE;
+
 CREATE AGGREGATE quantile(double precision, double precision) (
     SFUNC = quantile_append_double,
     STYPE = internal,
-    FINALFUNC = quantile_double
+    FINALFUNC = quantile_double,
+    COMBINEFUNC = quantile_double_combine,
+    SERIALFUNC = quantile_double_serial,
+    DESERIALFUNC = quantile_double_deserial,
+    PARALLEL = SAFE
 );
 
 CREATE AGGREGATE quantile(double precision, double precision[]) (
     SFUNC = quantile_append_double_array,
     STYPE = internal,
-    FINALFUNC = quantile_double_array
+    FINALFUNC = quantile_double_array,
+    COMBINEFUNC = quantile_double_combine,
+    SERIALFUNC = quantile_double_serial,
+    DESERIALFUNC = quantile_double_deserial,
+    PARALLEL = SAFE
 );
 
 /* quantile for the numeric */
@@ -85,16 +108,39 @@ CREATE OR REPLACE FUNCTION quantile_int32_array(p_pointer internal)
     AS 'quantile', 'quantile_int32_array'
     LANGUAGE C IMMUTABLE;
 
+CREATE OR REPLACE FUNCTION quantile_int32_serial(p_pointer internal)
+    RETURNS bytea
+    AS 'quantile', 'quantile_int32_serial'
+    LANGUAGE C IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION quantile_int32_deserial(p_state bytea, p_dummy internal)
+    RETURNS internal
+    AS 'quantile', 'quantile_int32_deserial'
+    LANGUAGE C IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION quantile_int32_combine(p_state1 internal, p_state2 internal)
+    RETURNS internal
+    AS 'quantile', 'quantile_int32_combine'
+    LANGUAGE C IMMUTABLE;
+
 CREATE AGGREGATE quantile(int, double precision) (
     SFUNC = quantile_append_int32,
     STYPE = internal,
-    FINALFUNC = quantile_int32
+    FINALFUNC = quantile_int32,
+    COMBINEFUNC = quantile_int32_combine,
+    SERIALFUNC = quantile_int32_serial,
+    DESERIALFUNC = quantile_int32_deserial,
+    PARALLEL = SAFE
 );
 
 CREATE AGGREGATE quantile(int, double precision[]) (
     SFUNC = quantile_append_int32_array,
     STYPE = internal,
-    FINALFUNC = quantile_int32_array
+    FINALFUNC = quantile_int32_array,
+    COMBINEFUNC = quantile_int32_combine,
+    SERIALFUNC = quantile_int32_serial,
+    DESERIALFUNC = quantile_int32_deserial,
+    PARALLEL = SAFE
 );
 
 /* quantile for the int64 */
@@ -118,16 +164,39 @@ CREATE OR REPLACE FUNCTION quantile_int64_array(p_pointer internal)
     AS 'quantile', 'quantile_int64_array'
     LANGUAGE C IMMUTABLE;
 
+CREATE OR REPLACE FUNCTION quantile_int64_serial(p_pointer internal)
+    RETURNS bytea
+    AS 'quantile', 'quantile_int64_serial'
+    LANGUAGE C IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION quantile_int64_deserial(p_state bytea, p_dummy internal)
+    RETURNS internal
+    AS 'quantile', 'quantile_int64_deserial'
+    LANGUAGE C IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION quantile_int64_combine(p_state1 internal, p_state2 internal)
+    RETURNS internal
+    AS 'quantile', 'quantile_int64_combine'
+    LANGUAGE C IMMUTABLE;
+
 /* actual aggregates */
 
 CREATE AGGREGATE quantile(bigint, double precision) (
     SFUNC = quantile_append_int64,
     STYPE = internal,
-    FINALFUNC = quantile_int64
+    FINALFUNC = quantile_int64,
+    COMBINEFUNC = quantile_int64_combine,
+    SERIALFUNC = quantile_int64_serial,
+    DESERIALFUNC = quantile_int64_deserial,
+    PARALLEL = SAFE
 );
 
 CREATE AGGREGATE quantile(bigint, double precision[]) (
     SFUNC = quantile_append_int64_array,
     STYPE = internal,
-    FINALFUNC = quantile_int64_array
+    FINALFUNC = quantile_int64_array,
+    COMBINEFUNC = quantile_int64_combine,
+    SERIALFUNC = quantile_int64_serial,
+    DESERIALFUNC = quantile_int64_deserial,
+    PARALLEL = SAFE
 );
