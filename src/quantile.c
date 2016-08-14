@@ -335,7 +335,7 @@ quantile_append_numeric(PG_FUNCTION_ARGS)
         data->data = NULL;
         data->next = 0;
         data->usedlen = 0;
-        data->maxlen = 32;	/* TODO make this a constant */
+        data->maxlen = 32;    /* TODO make this a constant */
 
         data->quantiles = (double*)palloc(sizeof(double));
         data->quantiles[0] = PG_GETARG_FLOAT8(2);
@@ -407,7 +407,7 @@ quantile_append_numeric_array(PG_FUNCTION_ARGS)
         data->data = NULL;
         data->next = 0;
         data->usedlen = 0;
-        data->maxlen = 32;	/* TODO make this a constant */
+        data->maxlen = 32;    /* TODO make this a constant */
 
         /* read the array of quantiles */
         data->quantiles = array_to_double(fcinfo, PG_GETARG_ARRAYTYPE_P(2), &data->nquantiles);
@@ -1650,48 +1650,48 @@ sort_state_int64(struct_int64 *state)
 static void
 sort_state_numeric(struct_numeric *state)
 {
-	int		i;
-	char   *data;
-	char   *ptr;
-	Numeric *items;
+    int        i;
+    char   *data;
+    char   *ptr;
+    Numeric *items;
 
-	/*
-	 * we'll sort a local copy of the data, and then copy it back (we want
-	 * to put the result into the proper memory context)
-	 */
-	items = (Numeric*)palloc(sizeof(Numeric) * state->next);
-	data = palloc(state->usedlen);
-	memcpy(data, state->data, state->usedlen);
+    /*
+     * we'll sort a local copy of the data, and then copy it back (we want
+     * to put the result into the proper memory context)
+     */
+    items = (Numeric*)palloc(sizeof(Numeric) * state->next);
+    data = palloc(state->usedlen);
+    memcpy(data, state->data, state->usedlen);
 
-	/* parse the data into array of Numeric items, for pg_qsort */
-	i = 0;
-	ptr = data;
-	while (ptr < data + state->usedlen)
-	{
-		items[i++] = (Numeric)ptr;
-		ptr += VARSIZE(ptr);
+    /* parse the data into array of Numeric items, for pg_qsort */
+    i = 0;
+    ptr = data;
+    while (ptr < data + state->usedlen)
+    {
+        items[i++] = (Numeric)ptr;
+        ptr += VARSIZE(ptr);
 
-		Assert(i <= state->next);
-		Assert(ptr <= (data + state->usedlen));
-	}
+        Assert(i <= state->next);
+        Assert(ptr <= (data + state->usedlen));
+    }
 
-	Assert(i == state->next);
-	Assert(ptr == (data + state->usedlen));
+    Assert(i == state->next);
+    Assert(ptr == (data + state->usedlen));
 
-	pg_qsort(items, state->next, sizeof(Numeric), &numeric_comparator);
+    pg_qsort(items, state->next, sizeof(Numeric), &numeric_comparator);
 
-	/* copy the values from the local array back into the state */
-	ptr = state->data;
-	for (i = 0; i < state->next; i++)
-	{
-		memcpy(ptr, items[i], VARSIZE(items[i]));
-		ptr += VARSIZE(items[i]);
+    /* copy the values from the local array back into the state */
+    ptr = state->data;
+    for (i = 0; i < state->next; i++)
+    {
+        memcpy(ptr, items[i], VARSIZE(items[i]));
+        ptr += VARSIZE(items[i]);
 
-		Assert(ptr <= state->data + state->usedlen);
-	}
+        Assert(ptr <= state->data + state->usedlen);
+    }
 
-	Assert(ptr == state->data + state->usedlen);
+    Assert(ptr == state->data + state->usedlen);
 
-	pfree(items);
-	pfree(data);
+    pfree(items);
+    pfree(data);
 }
