@@ -77,17 +77,20 @@ typedef struct struct_int64 {
 typedef struct struct_numeric {
 
     int nquantiles;
-    int nelements;
     int next;
 
+    int maxlen;     /* total size of the buffer */
+    int usedlen;    /* used part of the buffer */
+
     double * quantiles;
-    Numeric * elements;
+    char   * data;  /* contents of the numeric values */
 
 } struct_numeric;
 
 static void sort_state_double(struct_double *state);
 static void sort_state_int32(struct_int32 *state);
 static void sort_state_int64(struct_int64 *state);
+static void sort_state_numeric(struct_numeric *state);
 
 /* comparators, used for qsort */
 
@@ -305,6 +308,8 @@ quantile_append_double_array(PG_FUNCTION_ARGS)
 Datum
 quantile_append_numeric(PG_FUNCTION_ARGS)
 {
+    int len;
+    Numeric element;
     struct_numeric * data;
 
     MemoryContext oldcontext;
@@ -327,9 +332,10 @@ quantile_append_numeric(PG_FUNCTION_ARGS)
     if (PG_ARGISNULL(0))
     {
         data = (struct_numeric*)palloc(sizeof(struct_numeric));
-        data->elements  = (Numeric*)palloc(4*sizeof(Numeric));
-        data->nelements = 4;
+        data->data = NULL;
         data->next = 0;
+        data->usedlen = 0;
+        data->maxlen = 32;	/* TODO make this a constant */
 
         data->quantiles = (double*)palloc(sizeof(double));
         data->quantiles[0] = PG_GETARG_FLOAT8(2);
@@ -340,17 +346,33 @@ quantile_append_numeric(PG_FUNCTION_ARGS)
     else
         data = (struct_numeric*)PG_GETARG_POINTER(0);
 
+    element = PG_GETARG_NUMERIC(1);
+    len = VARSIZE(element);
+
     /* we can be sure the value is not null (see the check above) */
-    if (data->next > data->nelements-1)
+    if (data->usedlen + len > data->maxlen)
     {
-        data->nelements *= 2;
-        data->elements = (Numeric*)repalloc(data->elements, sizeof(Numeric)*data->nelements);
+        while (len + data->usedlen > data->maxlen)
+            data->maxlen *= 2;
+
+        if (data->data != NULL)
+            data->data = repalloc(data->data, data->maxlen);
     }
 
-    /* the value has to be copied (it's reused) */
-    data->elements[data->next++] = DatumGetNumeric(datumCopy(NumericGetDatum(PG_GETARG_NUMERIC(1)), false, -1));
+    /* if first entry, we need to allocate the buffer */
+    if (! data->data)
+        data->data = palloc(data->maxlen);
+
+    /* copy the contents of the Numeric in place */
+    memcpy(data->data + data->usedlen, element, len);
+
+    data->usedlen += len;
+    data->next += 1;
 
     MemoryContextSwitchTo(oldcontext);
+
+    Assert(data->usedlen <= data->maxlen);
+    Assert((!data->usedlen && !data->data) || (data->usedlen && data->data));
 
     PG_RETURN_POINTER(data);
 }
@@ -358,6 +380,8 @@ quantile_append_numeric(PG_FUNCTION_ARGS)
 Datum
 quantile_append_numeric_array(PG_FUNCTION_ARGS)
 {
+    int len;
+    Numeric element;
     struct_numeric * data;
 
     MemoryContext oldcontext;
@@ -373,16 +397,17 @@ quantile_append_numeric_array(PG_FUNCTION_ARGS)
             PG_RETURN_DATUM(PG_GETARG_DATUM(0));
     }
 
-    GET_AGG_CONTEXT("quantile_append_numeric_array", fcinfo, aggcontext);
+    GET_AGG_CONTEXT("quantile_append_numeric", fcinfo, aggcontext);
 
     oldcontext = MemoryContextSwitchTo(aggcontext);
 
     if (PG_ARGISNULL(0))
     {
         data = (struct_numeric*)palloc(sizeof(struct_numeric));
-        data->elements  = (Numeric*)palloc(4*sizeof(Numeric));
-        data->nelements = 4;
+        data->data = NULL;
         data->next = 0;
+        data->usedlen = 0;
+        data->maxlen = 32;	/* TODO make this a constant */
 
         /* read the array of quantiles */
         data->quantiles = array_to_double(fcinfo, PG_GETARG_ARRAYTYPE_P(2), &data->nquantiles);
@@ -392,16 +417,33 @@ quantile_append_numeric_array(PG_FUNCTION_ARGS)
     else
         data = (struct_numeric*)PG_GETARG_POINTER(0);
 
+    element = PG_GETARG_NUMERIC(1);
+    len = VARSIZE(element);
+
     /* we can be sure the value is not null (see the check above) */
-    if (data->next > data->nelements-1)
+    if (data->usedlen + len > data->maxlen)
     {
-        data->nelements *= 2;
-        data->elements = (Numeric*)repalloc(data->elements, sizeof(Numeric)*data->nelements);
+        while (len + data->usedlen > data->maxlen)
+            data->maxlen *= 2;
+
+        if (data->data != NULL)
+            data->data = repalloc(data->data, data->maxlen);
     }
 
-    data->elements[data->next++] = DatumGetNumeric(datumCopy(NumericGetDatum(PG_GETARG_NUMERIC(1)), false, -1));
+    /* if first entry, we need to allocate the buffer */
+    if (! data->data)
+        data->data = palloc(data->maxlen);
+
+    /* copy the contents of the Numeric in place */
+    memcpy(data->data + data->usedlen, element, len);
+
+    data->usedlen += len;
+    data->next += 1;
 
     MemoryContextSwitchTo(oldcontext);
+
+    Assert(data->usedlen <= data->maxlen);
+    Assert((!data->usedlen && !data->data) || (data->usedlen && data->data));
 
     PG_RETURN_POINTER(data);
 }
@@ -1272,6 +1314,7 @@ Datum
 quantile_numeric(PG_FUNCTION_ARGS)
 {
     int idx = 0;
+    char *ptr;
     struct_numeric * data;
 
     CHECK_AGG_CONTEXT("quantile_numeric", fcinfo);
@@ -1281,12 +1324,20 @@ quantile_numeric(PG_FUNCTION_ARGS)
 
     data = (struct_numeric*)PG_GETARG_POINTER(0);
 
-    qsort(data->elements, data->next, sizeof(Numeric), &numeric_comparator);
+    sort_state_numeric(data);
 
     if (data->quantiles[0] > 0)
         idx = (int)ceil(data->next * data->quantiles[0]) - 1;
 
-    PG_RETURN_NUMERIC(data->elements[idx]);
+    /* walk the array until you find the entry */
+    ptr = data->data;
+    while (idx > 0)
+    {
+        ptr += VARSIZE(ptr);
+        idx--;
+    }
+
+    PG_RETURN_NUMERIC((Numeric)ptr);
 }
 
 Datum
@@ -1295,6 +1346,8 @@ quantile_numeric_array(PG_FUNCTION_ARGS)
     int i, idx;
     struct_numeric * data;
     Numeric * result;
+    Numeric * elements;
+    char *ptr;
 
     CHECK_AGG_CONTEXT("quantile_numeric_array", fcinfo);
 
@@ -1305,7 +1358,21 @@ quantile_numeric_array(PG_FUNCTION_ARGS)
 
     result = palloc(data->nquantiles * sizeof(Numeric));
 
-    qsort(data->elements, data->next, sizeof(Numeric), &numeric_comparator);
+    sort_state_numeric(data);
+
+    elements = palloc(data->next * sizeof(Numeric));
+
+    idx = 0;
+    ptr = data->data;
+    while (ptr < data->data + data->usedlen)
+    {
+        Assert(idx < data->next);
+        elements[idx++] = (Numeric)ptr;
+        ptr += VARSIZE(ptr);
+    }
+
+    Assert(ptr == data->data + data->usedlen);
+    Assert(idx == data->next);
 
     for (i = 0; i < data->nquantiles; i++)
     {
@@ -1313,8 +1380,10 @@ quantile_numeric_array(PG_FUNCTION_ARGS)
         if (data->quantiles[i] > 0)
             idx = (int)ceil(data->next * data->quantiles[i]) - 1;
 
-        result[i] = data->elements[idx];
+        result[i] = elements[idx];
     }
+
+    pfree(elements);
 
     return numeric_to_array(fcinfo, result, data->nquantiles);
 }
@@ -1575,4 +1644,54 @@ sort_state_int64(struct_int64 *state)
 
     pg_qsort(state->elements, state->next, sizeof(int64), &int64_comparator);
     state->sorted = true;
+}
+
+
+static void
+sort_state_numeric(struct_numeric *state)
+{
+	int		i;
+	char   *data;
+	char   *ptr;
+	Numeric *items;
+
+	/*
+	 * we'll sort a local copy of the data, and then copy it back (we want
+	 * to put the result into the proper memory context)
+	 */
+	items = (Numeric*)palloc(sizeof(Numeric) * state->next);
+	data = palloc(state->usedlen);
+	memcpy(data, state->data, state->usedlen);
+
+	/* parse the data into array of Numeric items, for pg_qsort */
+	i = 0;
+	ptr = data;
+	while (ptr < data + state->usedlen)
+	{
+		items[i++] = (Numeric)ptr;
+		ptr += VARSIZE(ptr);
+
+		Assert(i <= state->next);
+		Assert(ptr <= (data + state->usedlen));
+	}
+
+	Assert(i == state->next);
+	Assert(ptr == (data + state->usedlen));
+
+	pg_qsort(items, state->next, sizeof(Numeric), &numeric_comparator);
+
+	/* copy the values from the local array back into the state */
+	ptr = state->data;
+	for (i = 0; i < state->next; i++)
+	{
+		memcpy(ptr, items[i], VARSIZE(items[i]));
+		ptr += VARSIZE(items[i]);
+
+		Assert(ptr <= state->data + state->usedlen);
+	}
+
+	Assert(ptr == state->data + state->usedlen);
+
+	pfree(items);
+	pfree(data);
 }
