@@ -155,10 +155,6 @@ PG_FUNCTION_INFO_V1(quantile_append_numeric);
 PG_FUNCTION_INFO_V1(quantile_numeric_array);
 PG_FUNCTION_INFO_V1(quantile_numeric);
 
-PG_FUNCTION_INFO_V1(quantile_numeric_serial);
-PG_FUNCTION_INFO_V1(quantile_numeric_deserial);
-PG_FUNCTION_INFO_V1(quantile_numeric_combine);
-
 Datum quantile_append_double_array(PG_FUNCTION_ARGS);
 Datum quantile_append_double(PG_FUNCTION_ARGS);
 
@@ -184,6 +180,10 @@ Datum quantile_append_int64(PG_FUNCTION_ARGS);
 
 Datum quantile_int64_array(PG_FUNCTION_ARGS);
 Datum quantile_int64(PG_FUNCTION_ARGS);
+
+Datum quantile_int64_serial(PG_FUNCTION_ARGS);
+Datum quantile_int64_deserial(PG_FUNCTION_ARGS);
+Datum quantile_int64_combine(PG_FUNCTION_ARGS);
 
 Datum quantile_append_numeric_array(PG_FUNCTION_ARGS);
 Datum quantile_append_numeric(PG_FUNCTION_ARGS);
