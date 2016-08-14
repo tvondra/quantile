@@ -81,6 +81,7 @@ typedef struct struct_numeric {
 
     int maxlen;     /* total size of the buffer */
     int usedlen;    /* used part of the buffer */
+    bool sorted;
 
     double * quantiles;
     char   * data;  /* contents of the numeric values */
@@ -155,6 +156,10 @@ PG_FUNCTION_INFO_V1(quantile_append_numeric);
 PG_FUNCTION_INFO_V1(quantile_numeric_array);
 PG_FUNCTION_INFO_V1(quantile_numeric);
 
+PG_FUNCTION_INFO_V1(quantile_numeric_serial);
+PG_FUNCTION_INFO_V1(quantile_numeric_deserial);
+PG_FUNCTION_INFO_V1(quantile_numeric_combine);
+
 Datum quantile_append_double_array(PG_FUNCTION_ARGS);
 Datum quantile_append_double(PG_FUNCTION_ARGS);
 
@@ -190,6 +195,10 @@ Datum quantile_append_numeric(PG_FUNCTION_ARGS);
 
 Datum quantile_numeric_array(PG_FUNCTION_ARGS);
 Datum quantile_numeric(PG_FUNCTION_ARGS);
+
+Datum quantile_numeric_serial(PG_FUNCTION_ARGS);
+Datum quantile_numeric_deserial(PG_FUNCTION_ARGS);
+Datum quantile_numeric_combine(PG_FUNCTION_ARGS);
 
 /* These functions use a bit dirty trick to pass the data - the int
  * value is actually a pointer to the array allocated in the parent
@@ -336,6 +345,7 @@ quantile_append_numeric(PG_FUNCTION_ARGS)
         data->next = 0;
         data->usedlen = 0;
         data->maxlen = 32;    /* TODO make this a constant */
+        data->sorted = false;
 
         data->quantiles = (double*)palloc(sizeof(double));
         data->quantiles[0] = PG_GETARG_FLOAT8(2);
@@ -408,6 +418,7 @@ quantile_append_numeric_array(PG_FUNCTION_ARGS)
         data->next = 0;
         data->usedlen = 0;
         data->maxlen = 32;    /* TODO make this a constant */
+        data->sorted = false;
 
         /* read the array of quantiles */
         data->quantiles = array_to_double(fcinfo, PG_GETARG_ARRAYTYPE_P(2), &data->nquantiles);
@@ -1156,6 +1167,187 @@ quantile_int64_combine(PG_FUNCTION_ARGS)
 }
 
 Datum
+quantile_numeric_serial(PG_FUNCTION_ARGS)
+{
+    struct_numeric   *state = (struct_numeric *)PG_GETARG_POINTER(0);
+    Size            hlen = offsetof(struct_numeric, quantiles);      /* header */
+    Size            qlen = state->nquantiles * sizeof(double);       /* quantiles */
+    Size            dlen = state->usedlen;                           /* elements */
+    bytea           *out = (bytea *)palloc(VARHDRSZ + qlen + dlen + hlen);
+    char           *ptr;
+
+    CHECK_AGG_CONTEXT("quantile_numeric_serial", fcinfo);
+
+    /* we want to serialize the data in sorted format */
+    sort_state_numeric(state);
+
+    SET_VARSIZE(out, VARHDRSZ + qlen + dlen + hlen);
+    ptr = VARDATA(out);
+
+    memcpy(ptr, state, hlen);
+    ptr += hlen;
+
+    memcpy(ptr, state->quantiles, qlen);
+    ptr += qlen;
+
+    memcpy(ptr, state->data, dlen);
+    ptr += dlen;
+
+    Assert(ptr == (char*)out + VARHDRSZ + hlen + qlen + dlen);
+
+    PG_RETURN_BYTEA_P(out);
+}
+
+Datum
+quantile_numeric_deserial(PG_FUNCTION_ARGS)
+{
+    struct_numeric *out = (struct_numeric *)palloc(sizeof(struct_numeric));
+    bytea  *state = (bytea *)PG_GETARG_POINTER(0);
+    Size    len = VARSIZE_ANY_EXHDR(state);
+    char   *ptr = VARDATA(state);
+
+    CHECK_AGG_CONTEXT("quantile_numeric_deserial", fcinfo);
+
+    Assert(len > 0);
+
+    /* copy the header */
+    memcpy(out, ptr, offsetof(struct_numeric, quantiles));
+    ptr += offsetof(struct_numeric, quantiles);
+
+    Assert((out->nquantiles > 0) && (out->next > 0));
+    Assert(len == offsetof(struct_numeric, quantiles) +
+                  (out->nquantiles * sizeof(double)) + out->usedlen);
+    Assert(out->sorted);
+
+    /* we only allocate the necessary space */
+    out->quantiles = (double *)palloc(out->nquantiles * sizeof(double));
+    out->data = palloc(out->usedlen);
+
+    memcpy((void *)out->quantiles, ptr, out->nquantiles * sizeof(double));
+    ptr += out->nquantiles * sizeof(double);
+
+    memcpy((void *)out->data, ptr, out->usedlen);
+    ptr += out->usedlen;
+
+    /* make sure we've consumed all serialized data */
+    Assert(ptr == (char*)state + VARSIZE(state));
+
+    PG_RETURN_POINTER(out);
+}
+
+Datum
+quantile_numeric_combine(PG_FUNCTION_ARGS)
+{
+    int                i;
+    struct_numeric *state1;
+    struct_numeric *state2;
+    MemoryContext agg_context;
+
+    char           *data, *tmp, *ptr1, *ptr2;
+
+    GET_AGG_CONTEXT("trimmed_combine_numeric", fcinfo, agg_context);
+
+    state1 = PG_ARGISNULL(0) ? NULL : (struct_numeric *) PG_GETARG_POINTER(0);
+    state2 = PG_ARGISNULL(1) ? NULL : (struct_numeric *) PG_GETARG_POINTER(1);
+
+    if (state2 == NULL)
+        PG_RETURN_POINTER(state1);
+
+    if (state1 == NULL)
+    {
+        state1 = (struct_numeric *)MemoryContextAlloc(agg_context,
+                                                    sizeof(struct_numeric));
+
+        state1->nquantiles = state2->nquantiles;
+        state1->next = state2->next;
+        state1->usedlen = state2->usedlen;
+        state1->maxlen = state2->maxlen;
+        state1->sorted = state2->sorted;
+
+        /* copy the quantiles */
+        state1->quantiles = MemoryContextAlloc(agg_context,
+                                               state1->nquantiles * sizeof(double));
+        memcpy(state1->quantiles, state2->quantiles,
+               state1->nquantiles * sizeof(double));
+
+        /* copy the buffer */
+        state1->data = MemoryContextAlloc(agg_context, state1->usedlen);
+        memcpy(state1->data, state2->data, state1->usedlen);
+
+        PG_RETURN_POINTER(state1);
+    }
+
+    Assert((state1 != NULL) && (state2 != NULL));
+
+    /* make sure both states are sorted */
+    sort_state_numeric(state1);
+    sort_state_numeric(state2);
+
+    /* allocate temporary arrays */
+    data = MemoryContextAlloc(agg_context, state1->usedlen + state2->usedlen);
+    tmp = data;
+
+    /* merge the two arrays */
+    ptr1 = state1->data;
+    ptr2 = state2->data;
+
+    for (i = 0; i < state1->next + state2->next; i++)
+    {
+        Numeric element;
+
+        Assert(ptr1 <= (state1->data + state1->usedlen));
+        Assert(ptr2 <= (state2->data + state2->usedlen));
+
+        if ((ptr1 < (state1->data + state1->usedlen)) &&
+            (ptr2 < (state2->data + state2->usedlen)))
+        {
+            if (numeric_comparator(&ptr1, &ptr2) <= 0)
+            {
+                element = (Numeric)ptr1;
+                ptr1 += VARSIZE(ptr1);
+            }
+            else
+            {
+                element = (Numeric)ptr2;
+                ptr2 += VARSIZE(ptr2);
+            }
+        }
+        else if (ptr1 < (state1->data + state1->usedlen))
+        {
+            element = (Numeric)ptr1;
+            ptr1 += VARSIZE(ptr1);
+        }
+        else if (ptr2 < (state2->data + state2->usedlen))
+        {
+            element = (Numeric)ptr2;
+            ptr2 += VARSIZE(ptr2);
+        }
+        else
+            elog(ERROR, "unexpected");
+
+        /* actually copy the value */
+        memcpy(tmp, element, VARSIZE(element));
+        tmp += VARSIZE(element);
+    }
+
+    Assert(ptr1 == (state1->data + state1->usedlen));
+    Assert(ptr2 == (state2->data + state2->usedlen));
+    Assert((tmp - data) == (state1->usedlen + state2->usedlen));
+
+    /* free the two arrays */
+    pfree(state1->data);
+    pfree(state2->data);
+
+    state1->data = data;
+
+    /* and finally remember the current number of elements */
+    state1->next += state2->next;
+    state1->usedlen += state2->usedlen;
+
+    PG_RETURN_POINTER(state1);
+}
+
+Datum
 quantile_double(PG_FUNCTION_ARGS)
 {
     int     idx = 0;
@@ -1655,6 +1847,9 @@ sort_state_numeric(struct_numeric *state)
     char   *ptr;
     Numeric *items;
 
+    if (state->sorted)
+        return;
+
     /*
      * we'll sort a local copy of the data, and then copy it back (we want
      * to put the result into the proper memory context)
@@ -1691,6 +1886,8 @@ sort_state_numeric(struct_numeric *state)
     }
 
     Assert(ptr == state->data + state->usedlen);
+
+    state->sorted = true;
 
     pfree(items);
     pfree(data);

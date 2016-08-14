@@ -75,16 +75,39 @@ CREATE OR REPLACE FUNCTION quantile_numeric_array(p_pointer internal)
     AS 'quantile', 'quantile_numeric_array'
     LANGUAGE C IMMUTABLE;
 
+CREATE OR REPLACE FUNCTION quantile_numeric_serial(p_pointer internal)
+    RETURNS bytea
+    AS 'quantile', 'quantile_numeric_serial'
+    LANGUAGE C IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION quantile_numeric_deserial(p_state bytea, p_dummy internal)
+    RETURNS internal
+    AS 'quantile', 'quantile_numeric_deserial'
+    LANGUAGE C IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION quantile_numeric_combine(p_state1 internal, p_state2 internal)
+    RETURNS internal
+    AS 'quantile', 'quantile_numeric_combine'
+    LANGUAGE C IMMUTABLE;
+
 CREATE AGGREGATE quantile(numeric, double precision) (
     SFUNC = quantile_append_numeric,
     STYPE = internal,
-    FINALFUNC = quantile_numeric
+    FINALFUNC = quantile_numeric,
+    COMBINEFUNC = quantile_numeric_combine,
+    SERIALFUNC = quantile_numeric_serial,
+    DESERIALFUNC = quantile_numeric_deserial,
+    PARALLEL = SAFE
 );
 
 CREATE AGGREGATE quantile(numeric, double precision[]) (
     SFUNC = quantile_append_numeric_array,
     STYPE = internal,
-    FINALFUNC = quantile_numeric_array
+    FINALFUNC = quantile_numeric_array,
+    COMBINEFUNC = quantile_numeric_combine,
+    SERIALFUNC = quantile_numeric_serial,
+    DESERIALFUNC = quantile_numeric_deserial,
+    PARALLEL = SAFE
 );
 
 /* quantile for the int32 */
