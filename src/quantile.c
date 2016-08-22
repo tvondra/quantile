@@ -777,12 +777,6 @@ quantile_double_combine(PG_FUNCTION_ARGS)
 
         MemoryContextSwitchTo(old_context);
 
-        /* free the internal state */
-        pfree(state2->elements);
-        pfree(state2->quantiles);
-        state2->elements = NULL;
-        state2->quantiles = NULL;
-
         PG_RETURN_POINTER(state1);
     }
 
@@ -821,10 +815,11 @@ quantile_double_combine(PG_FUNCTION_ARGS)
     Assert(k == (state1->next + state2->next));
     Assert((i == state1->next) && (j == state2->next));
 
-    /* free the two arrays */
+    /*
+     * We can only free parts of state1, as state2 might be in some
+     * other (longer-lived) memory context.
+     */
     pfree(state1->elements);
-    pfree(state2->elements);
-
     state1->elements = tmp;
 
     /* and finally remember the current number of elements */
