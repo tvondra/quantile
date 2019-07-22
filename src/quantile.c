@@ -935,16 +935,9 @@ int64_comparator(const void *a, const void *b)
 static int
 numeric_comparator(const void *a, const void *b)
 {
-    FunctionCallInfoData fcinfo;
-
-    /* set params */
-    fcinfo.arg[0] = NumericGetDatum(*(Numeric*)a);
-    fcinfo.arg[1] = NumericGetDatum(*(Numeric*)b);
-    fcinfo.argnull[0] = false;
-    fcinfo.argnull[1] = false;
-
-    /* return the result */
-    return DatumGetInt32(numeric_cmp(&fcinfo));
+	return DatumGetInt32(DirectFunctionCall2(numeric_cmp,
+											 NumericGetDatum(*(Numeric *) a),
+											 NumericGetDatum(*(Numeric *) b)));
 }
 
 /*

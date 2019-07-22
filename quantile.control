@@ -1,4 +1,4 @@
 # quantile aggregate
 comment = 'Provides quantile aggregate function.'
-default_version = '1.1.5'
+default_version = '1.1.6'
 relocatable = true
