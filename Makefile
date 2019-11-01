@@ -1,5 +1,5 @@
 MODULE_big = quantile
-OBJS = src/quantile.o
+OBJS = quantile.o
 
 EXTENSION = quantile
 DATA = sql/quantile--1.1.6.sql sql/quantile--1.1.4--1.1.5.sql sql/quantile--1.1.5-1.1.6.sql
@@ -14,7 +14,3 @@ REGRESS_OPTS = --inputdir=test
 PG_CONFIG = pg_config
 PGXS := $(shell $(PG_CONFIG) --pgxs)
 include $(PGXS)
-
-quantile.so: src/quantile.o
-
-src/quantile.o: src/quantile.c
