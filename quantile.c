@@ -927,7 +927,7 @@ quantile_numeric(PG_FUNCTION_ARGS)
 
 	elements = (Numeric *) state->elements;
 
-	qsort(state->elements, state->nelements, sizeof(Numeric), &numeric_comparator);
+	qsort(state->elements, state->nelements, sizeof(Numeric), numeric_comparator);
 
 	if (state->quantiles[0] > 0)
 		idx = (int) ceil(state->nelements * state->quantiles[0]) - 1;
@@ -956,7 +956,7 @@ quantile_numeric_array(PG_FUNCTION_ARGS)
 
 	elements = (Numeric *) state->elements;
 
-	qsort(elements, state->nelements, sizeof(Numeric), &numeric_comparator);
+	qsort(elements, state->nelements, sizeof(Numeric), numeric_comparator);
 
 	for (i = 0; i < state->nquantiles; i++)
 	{
@@ -1003,9 +1003,11 @@ numeric_comparator(const void *a, const void *b)
 	Numeric	na = (* (Numeric *) a);
 	Numeric	nb = (* (Numeric *) b);
 
-	return DatumGetInt32(DirectFunctionCall2(numeric_cmp,
-											 NumericGetDatum(na),
-											 NumericGetDatum(nb)));
+	int			result;
+
+	result = cmp_numerics(na, nb);
+
+	PG_RETURN_INT32(result);
 }
 
 /*
