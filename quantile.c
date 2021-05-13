@@ -84,12 +84,18 @@ typedef struct quantile_state
 	int	maxelements;	/* size of the elements array */
 	int	nelements;		/* number of elements */
 
+	char   *alloc_ptr;
+	char   *alloc_endptr;
+	Size	alloc_size;
+
 	/* arrays of elements and requested quantiles */
 	double *quantiles;
 	void   *elements;
 } quantile_state;
 
 #define	QUANTILE_MIN_ELEMENTS	4
+#define	QUANTILE_MIN_ALLOC_SIZE	1024
+#define	QUANTILE_MAX_ALLOC_SIZE	8192
 
 /* comparators, used for qsort */
 
@@ -307,6 +313,47 @@ quantile_append_double_array(PG_FUNCTION_ARGS)
 	PG_RETURN_POINTER(state);
 }
 
+static void
+init_alloc_state(quantile_state *state)
+{
+	state->alloc_ptr = NULL;
+	state->alloc_size = QUANTILE_MIN_ALLOC_SIZE;
+	state->alloc_endptr = NULL;
+}
+
+static Numeric
+copy_numeric(quantile_state *state, Numeric num)
+{
+	/* the value has to be copied into the right memory context */
+	Numeric	value;
+	Size	len = VARSIZE(num);
+
+	if (len > state->alloc_size)
+	{
+		value = (Numeric) palloc(len);
+		memcpy(value, num, len);
+	}
+
+	if (state->alloc_endptr - state->alloc_ptr < len)
+	{
+		state->alloc_ptr = palloc(state->alloc_size);
+		state->alloc_endptr = state->alloc_ptr + state->alloc_size;
+		state->alloc_size *= 2;
+
+		if (state->alloc_size > QUANTILE_MAX_ALLOC_SIZE)
+			state->alloc_size = QUANTILE_MAX_ALLOC_SIZE;
+	}
+
+	Assert(state->alloc_endptr - state->alloc_ptr >= len);
+
+	value = (Numeric) state->alloc_ptr;
+
+	memcpy(state->alloc_ptr, num, len);
+	state->alloc_ptr += len;
+
+	return value;
+}
+
 Datum
 quantile_append_numeric(PG_FUNCTION_ARGS)
 {
@@ -347,6 +394,8 @@ quantile_append_numeric(PG_FUNCTION_ARGS)
 		state->nquantiles = 1;
 
 		check_quantiles(state->nquantiles, state->quantiles);
+
+		init_alloc_state(state);
 	}
 	else
 		state = (quantile_state *) PG_GETARG_POINTER(0);
@@ -362,8 +411,7 @@ quantile_append_numeric(PG_FUNCTION_ARGS)
 	}
 
 	/* the value has to be copied into the right memory context */
-	value = (Numeric) palloc(VARSIZE(num));
-	memcpy(value, num, VARSIZE(num));
+	value = copy_numeric(state, num);
 
 	/* make sure to cast the array to (Numeric *) before updating it */
 	elements = (Numeric *) state->elements;
@@ -416,6 +464,8 @@ quantile_append_numeric_array(PG_FUNCTION_ARGS)
 										   &state->nquantiles);
 
 		check_quantiles(state->nquantiles, state->quantiles);
+
+		init_alloc_state(state);
 	}
 	else
 		state = (quantile_state *) PG_GETARG_POINTER(0);
@@ -429,8 +479,7 @@ quantile_append_numeric_array(PG_FUNCTION_ARGS)
 	}
 
 	/* the value has to be copied into the right memory context */
-	value = (Numeric) palloc(VARSIZE(num));
-	memcpy(value, num, VARSIZE(num));
+	value = copy_numeric(state, num);
 
 	/* make sure to cast the array to (Numeric *) before updating it */
 	elements = (Numeric *) state->elements;
