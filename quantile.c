@@ -1055,8 +1055,8 @@ double_to_array(FunctionCallInfo fcinfo, double * d, int len)
 								  CurrentMemoryContext);
 	}
 
-	PG_RETURN_ARRAYTYPE_P(makeArrayResult(astate,
-										  CurrentMemoryContext));
+	PG_RETURN_DATUM(makeArrayResult(astate,
+									CurrentMemoryContext));
 }
 
 static Datum
@@ -1075,8 +1075,8 @@ int32_to_array(FunctionCallInfo fcinfo, int32 * d, int len)
 								  CurrentMemoryContext);
 	}
 
-	PG_RETURN_ARRAYTYPE_P(makeArrayResult(astate,
-										  CurrentMemoryContext));
+	PG_RETURN_DATUM(makeArrayResult(astate,
+									CurrentMemoryContext));
 }
 
 static Datum
@@ -1096,8 +1096,8 @@ int64_to_array(FunctionCallInfo fcinfo, int64 * d, int len)
 								  CurrentMemoryContext);
 	}
 
-	PG_RETURN_ARRAYTYPE_P(makeArrayResult(astate,
-										  CurrentMemoryContext));
+	PG_RETURN_DATUM(makeArrayResult(astate,
+									CurrentMemoryContext));
 }
 
 static Datum
@@ -1116,8 +1116,8 @@ numeric_to_array(FunctionCallInfo fcinfo, Numeric * d, int len)
 								  CurrentMemoryContext);
 	}
 
-	PG_RETURN_ARRAYTYPE_P(makeArrayResult(astate,
-										  CurrentMemoryContext));
+	PG_RETURN_DATUM(makeArrayResult(astate,
+									CurrentMemoryContext));
 }
 
 static void
