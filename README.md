@@ -1,6 +1,7 @@
 # Quantile aggregates
 
 [![make installcheck](https://github.com/tvondra/quantile/actions/workflows/ci.yml/badge.svg)](https://github.com/tvondra/quantile/actions/workflows/ci.yml)
+[![PGXN version](https://badge.fury.io/pg/quantile.svg)](https://badge.fury.io/pg/quantile)
 
 This extension provides three simple aggregate functions to compute
 quantiles (http://en.wikipedia.org/wiki/Quantile). There are two
